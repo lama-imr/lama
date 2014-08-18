@@ -1,0 +1,76 @@
+#-----------------------------------------------------------------------
+# Makefile variations depending on different configurations
+#
+# ANN: Approximate Nearest Neighbors
+# Version: 1.1 05/03/05
+#
+# (This Make-config structure is based on the one used by Mesa by Brian
+# Paul.  If you succeed in porting ANN to your favorite system, please
+# send email to mount@cs.umd.edu, and I'll try to include it in this
+# list.)
+#
+#----------------------------------------------------------------------
+# The following configuration-dependent variables are passed to each
+# the Makefile in subdirectories:
+#
+# ANNLIB	The name of the ANN library file (usually libANN.a)
+# C++		The C compiler (usually CC or g++)
+# MAKELIB	The command and flags to make a library file (usually
+#			"ar ...")
+# CFLAGS	Flags to C++ compiler
+# RANLIB	For "ranlib" = use ranlib, "true" = don't use ranlib
+#----------------------------------------------------------------------
+# Revision 0.1  09/06/97
+#	Initial release
+# Revision 0.2  06/24/98
+#	Minor changes to fix compilation errors on SGI systems.
+# Revision 1.0  04/01/05
+#	Modifications for alpha with cxx
+#	Removed CFLAGS2 options (just write your own)
+#	Removed -DUSING...  (Compilers are pretty consistent these days)
+#	Added linux-g++ target
+# Revision 1.1  05/03/05
+#	Added macosx-g++ target
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+# Compilation options (add these, as desired, to the CFLAGS variable
+# in the desired compilation target below).  For example,
+#
+#	"CFLAGS = -O3 -Wall -DANN_PERF"
+#
+#	-g			Debugging.
+#	-O?			Run-time optimization.
+#	-Wall		Be verbose about warnings.
+#
+#	-DANN_PERF	Enable performance evaluation. (This may slow execution
+#				slightly.)
+#
+#	-DANN_NO_LIMITS_H
+#				Use this if limits.h or float.h does not exist on your
+#				system. (Also see include/ANN/ANN.h for other changes
+#				needed.)
+#
+#	-DANN_NO_RANDOM
+#				Use this option if srandom()/random() are not available
+#				on your system. Pseudo-random number generation is used
+#				in the utility program test/ann_test. The combination
+#				srandom()/random() is considered the best pseudo-random
+#				number generator, but is not available on all systems.
+#				If they are not available on your system (for example,
+#				Visual C++) then srand()/rand() will be used instead by
+#				setting this parameter.
+#
+#	-DWIN32
+#				This is used only for compilation under windows systems
+#				(but instead of using this, use the various .vcproj
+#				files in the MS_WIN32 directory).
+#-----------------------------------------------------------------------------
+
+#					Linux using g++
+
+include ../../../Mk/local.mk
+
+linux-g++:
+	$(MAKE) targets "ANNLIB = libANN.a" "C++ = $(CXX)" "CFLAGS = -O3" "MAKELIB = ar ruv" "RANLIB = true"
+
