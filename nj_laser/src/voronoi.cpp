@@ -55,7 +55,8 @@
  */
 
 #include <stdio.h>
-#include "Voronoi.h"
+
+#include <nj_laser/voronoi.h>
 
 namespace Voronoi {
 

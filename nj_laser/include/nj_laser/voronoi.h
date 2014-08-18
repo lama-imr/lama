@@ -318,7 +318,7 @@ private:
 
 int scomp(const void *p1,const void *p2);
 
-} // namespacdee voronoi
+} // namespace Voronoi
 #endif
 
 

@@ -7,10 +7,8 @@
 #include <iostream>
 #include <fstream>
 
-
-
-#include "laloc_utils.h"
-#include "shapeSim.h"
+#include <nj_laser/laloc_utils.h>
+#include <nj_laser/shape_sim.h>
 
 namespace Lama {
 namespace Laloc {
@@ -23,7 +21,6 @@ using std::cerr;
 using std::ofstream;
 
 typedef SPoint Point;
-
 
 
 vector<Point> rangeToPoint( const vector<double> &range, const double maxPhi) 

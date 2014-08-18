@@ -1,9 +1,10 @@
 
-#include "laloc_utils.h"
 #include <math.h>
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
+
+#include <nj_laser/laloc_utils.h>
 
 namespace Lama {
 namespace Laloc {

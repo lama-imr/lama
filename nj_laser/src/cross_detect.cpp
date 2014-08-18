@@ -4,14 +4,15 @@
 #include <fstream>
 #include <algorithm>
 #include <vector>
+
 #include <ros/ros.h>
 
-#include "crossDetect.h"
-#include "laloc_utils.h"
-#include "Voronoi.h"
-#include "polygonUtils.h"
-#include "shapeSim.h"
-#include "ANN/ANN.h"
+#include <nj_laser/cross_detect.h>
+#include <nj_laser/laloc_utils.h>
+#include <nj_laser/voronoi.h>
+#include <nj_laser/polygon_utils.h>
+#include <nj_laser/shape_sim.h>
+#include <ANN/ANN.h>
 
 /*
  * functions for detecting exit from a cross using data from

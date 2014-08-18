@@ -111,13 +111,12 @@ add_library(ANN STATIC ${ANN_SOURCES})
 ## Declare a cpp library
 
 ## Declare a cpp executable
-set(SRC ${SRC} src/main.cc)
-set(SRC ${SRC} src/CLaloc.cc)
-set(SRC ${SRC} src/laloc_utils.cc)
-set(SRC ${SRC} src/crossDetect.cc)
-set(SRC ${SRC} src/Voronoi.cc)
-set(SRC ${SRC} src/shapeSim.cc)
-add_executable(${PROJECT_NAME} src/main.cc ${SRC})
+set(SRC ${SRC} src/claloc.cpp)
+set(SRC ${SRC} src/laloc_utils.cpp)
+set(SRC ${SRC} src/cross_detect.cpp)
+set(SRC ${SRC} src/voronoi.cpp)
+set(SRC ${SRC} src/shape_sim.cpp)
+add_executable(${PROJECT_NAME} src/nj_laser_node.cpp ${SRC})
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes

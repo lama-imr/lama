@@ -9,18 +9,19 @@
 #include <vector>
 #include <cmath>
 
-#include "ros/ros.h"
-#include "geometry_msgs/Twist.h"
-#include "geometry_msgs/Pose2D.h"
-#include "geometry_msgs/PolygonStamped.h"
-#include "geometry_msgs/Point.h"
-#include "sensor_msgs/LaserScan.h"
-//#include "visualization_msgs/MarkerArray.h"
-#include "visualization_msgs/Marker.h"
-#include "lama_interfaces/lama_navigating_jockey.h"
-#include "lama_interfaces/lmi_laser_descriptor_set.h"
-#include "lama_interfaces/lmi_laser_descriptor_get.h"
-#include "CLaloc.h"
+#include <ros/ros.h>
+#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/Pose2D.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include <geometry_msgs/Point.h>
+#include <sensor_msgs/LaserScan.h>
+#include <visualization_msgs/Marker.h>
+
+#include <lama_interfaces/lama_navigating_jockey.h>
+#include <lama_interfaces/lmi_laser_descriptor_set.h>
+#include <lama_interfaces/lmi_laser_descriptor_get.h>
+
+#include <nj_laser/claloc.h>
 
 namespace li = lama_interfaces;
 ros::Publisher marker;
