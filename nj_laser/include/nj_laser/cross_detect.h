@@ -10,7 +10,7 @@
   * that two laser scanners are used to capture data 
   */
 
-namespace Lama {
+namespace lama {
 namespace Laloc {
 
 /* SFrontier is a line segment through which the robot can go
@@ -21,7 +21,7 @@ namespace Laloc {
  */
 struct SFrontier {
 
-  SFrontier(const SPoint& ip1, const SPoint& ip2, const double iwidth, const double iangle) :
+  SFrontier(const Point2& ip1, const Point2& ip2, const double iwidth, const double iangle) :
     p1(ip1),
     p2(ip2),
     width(iwidth),
@@ -29,7 +29,7 @@ struct SFrontier {
   {
   }
 
-  SPoint p1, p2;
+  Point2 p1, p2;
   double width;
   double angle;
 };
@@ -43,15 +43,15 @@ void cdPanoramatic3(
 
 /** @brief return center of a cross by finding largest circle. works fine
   */
-void getCrossCenterVoronoi(const std::vector<SPoint> &pts, const double rt,
+void getCrossCenterVoronoi(const std::vector<Point2> &pts, const double rt,
     const double dt, double &cx, double &cy, double &radius);
 
 void getCrossCenterVoronoiWithKDTree(
-    const vector<SPoint> &pts,  const double rt, const double dt,
+    const vector<Point2> &pts,  const double rt, const double dt,
     double &cx, double &cy, double &radius);
 
 } // namespace Laloc
-} // namespace Lama
+} // namespace lama
 
 #endif // _NJ_LASER_CROSSDETECT_H_
 

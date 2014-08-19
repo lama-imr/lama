@@ -41,7 +41,7 @@ bool interrupted = false;
 //float max_distance = 0.3;
 //float min_distance = 0.05;
 //int navigation_index = 0;
-Lama::Laloc::CLaloc cl;
+lama::Laloc::CLaloc cl;
 
 
 void handleLaser(sensor_msgs::LaserScan msg) {

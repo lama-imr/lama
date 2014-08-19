@@ -10,7 +10,7 @@
  * localization module based on laser detection of a cross
  */
 
-namespace Lama {
+namespace lama {
 namespace Laloc {
 
 
@@ -117,7 +117,7 @@ class CLaloc {
 };
 
 } // namespace Laloc
-} // namespace Lama
+} // namespace lama
 
 #endif // _NJ_LASER_CLALOC_H_
 

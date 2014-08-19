@@ -6,7 +6,7 @@
 
 #include <nj_laser/laloc_utils.h>
 
-namespace Lama {
+namespace lama {
 namespace Laloc {
 
 using std::cerr;
@@ -18,14 +18,14 @@ using std::string;
 /** make list of point from current scan. point far then threshold rt
   * are skipped
  */
-vector<SPoint> cutScan(const vector<double> &scan,
+vector<Point2> cutScan(const vector<double> &scan,
 		const double maxPhi, const double rt) {
 
-	vector<SPoint> p;
+	vector<Point2> p;
 
 	const int sSize = scan.size();
 	
-	SPoint tmp;
+	Point2 tmp;
 	for(int i=0;i<sSize;i++) {
 		if (scan[i] <= rt) {
 			tmp.x = scan[i]*cos(i*maxPhi/sSize);
@@ -54,7 +54,7 @@ void saveScan(const char *name, const vector<double> &range, const double maxPhi
 }
 
 
-void saveScan(const char *filename, const vector<SPoint> &pts) 
+void saveScan(const char *filename, const vector<Point2> &pts) 
 {
 	ofstream ofs(filename);
 
@@ -128,5 +128,5 @@ void saveDoubles(const char *filename, const std::vector<double> &values) {
 }
 
 } // namespace Laloc
-} // namespace Lama
+} // namespace lama
 

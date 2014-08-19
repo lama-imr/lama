@@ -19,11 +19,11 @@
  * laser range finder
  */
 
-namespace Lama {
+namespace lama {
 namespace Laloc {
 
 using std::vector;
-using std::cerr;
+using lama::Point2;
 
 // A map to store previously computed distances with ANN
 // first 16 bit = x * 100, last 16 bit = y * 100
@@ -31,7 +31,7 @@ typedef std::map<uint32_t, double> freeSpace_dict;
 
 	
 struct myLessPts {
-	bool operator()(const SPoint &a, const SPoint &b) {
+	bool operator()(const Point2 &a, const Point2 &b) {
 		if (a.x < b.x) {
 			return true;
 		}
@@ -71,10 +71,6 @@ struct SCircle {
 		x(xx),y(yy),r(rr) {}
 };	
 
-
-
-
-
 /* return frontiers and angles to it
  *
  * scan laser ranges
@@ -107,19 +103,19 @@ void cdPanoramatic3(
 
 
     if (filtScan.size() == 0) {
-        cerr << __FUNCTION__ << " all points from scan are above threshold\n";
+		std::cerr << __FUNCTION__ << " all points from scan are above threshold\n";
         return;
     }
 
 	if (scan.size() < 2)
 	{
-		cerr << __FUNCTION__ << " laser scan must have at least 2 points\n";
+		std::cerr << __FUNCTION__ << " laser scan must have at least 2 points\n";
 		return;
 	}
 
 	double phiResolution = (maxPhi - minPhi) / (scan.size() - 1);
 	double aAngle, bAngle;
-    SPoint a, b;
+    Point2 a, b;
 	aAngle = angleNumber[0] * phiResolution; //TODO: was aAngle = angleNumber[0];, explain
     a.x = filtScan[0] * cos(minPhi + aAngle);
     a.y = filtScan[0] * sin(minPhi + aAngle);
@@ -164,7 +160,7 @@ void cdPanoramatic3(
 /*
  * return the barycenter of a list of points
  */
-void getCenter(const vector<SPoint> &pts, double &cx, double &cy) {
+void getCenter(const vector<Point2> &pts, double &cx, double &cy) {
 	double sx = 0;
 	double sy = 0;
 
@@ -177,21 +173,19 @@ void getCenter(const vector<SPoint> &pts, double &cx, double &cy) {
 }
 
 
-
-
 /** return center of polygon. 
   */
-void getPolygonCenter(const vector<SPoint> &p,
+void getPolygonCenter(const vector<Point2> &p,
 		double &cx, double &cy) {
 
 	cx = 0;
 	cy = 0;
 
 
-	const int s = p.size();
+	const size_t s = p.size();
 	/* vypocet plochy polygonu */
 	double a = 0;
-	for(int i=0;i<s;i++)
+	for(size_t i=0;i<s;i++)
 		a+=p[i%s].x * p[(i+1)%s].y - 
 		   p[(i+1)%s].x * p[i%s].y;
 
@@ -199,7 +193,7 @@ void getPolygonCenter(const vector<SPoint> &p,
 	a = fabs(a);
 
 	/* vypocet stredu polygonu */
-	for(int i=0;i<s;i++) {
+	for(size_t i=0;i<s;i++) {
 		cx+=(p[i].x+p[(i+1)%s].x)*
 			(p[i].x * p[(i+1)%s].y - p[(i+1)%s].x * p[i].y);
 		
@@ -220,7 +214,7 @@ void getPolygonCenter(const vector<SPoint> &p,
  */
 void getCrossCenter(const vector<double> &angles,
 		const vector<double> &scan, const double maxPhi,
-		vector<SPoint> &corners, double &cx, double &cy)
+		vector<Point2> &corners, double &cx, double &cy)
 {
 
 
@@ -230,7 +224,7 @@ void getCrossCenter(const vector<double> &angles,
 	
 	int n = scan.size();
 	int j;
-	SPoint pt;
+	Point2 pt;
 	for(int i = 0; i < angles.size(); i++) {
 		j = (i + 1) % angles.size();
 		int from = (int)floor(angles[i] * n / maxPhi);
@@ -265,7 +259,7 @@ void getCrossCenter(const vector<double> &angles,
   * longer than dt
   */
 template<typename PT>
-vector<PT> replaceFrontiersT(const vector<SPoint> &pts, const double dt) {
+vector<PT> replaceFrontiersT(const vector<Point2> &pts, const double dt) {
 
 	const int size = pts.size();
 	const double dt2 = dt*dt;
@@ -300,13 +294,13 @@ vector<PT> replaceFrontiersT(const vector<SPoint> &pts, const double dt) {
 /** replace all lines by some points if length of that lines is
   * longer than dt
   */
-vector<SPoint> replaceFrontiers(const vector<SPoint> &pts, const double dt) {
+vector<Point2> replaceFrontiers(const vector<Point2> &pts, const double dt) {
 
 	const int size = pts.size();
 	const double dt2 = dt*dt;
 	double s;
 
-	vector<SPoint> tmp;
+	vector<Point2> tmp;
 	tmp.reserve(size);
 
 	for(int i=0;i<size;i++) {
@@ -319,7 +313,7 @@ vector<SPoint> replaceFrontiers(const vector<SPoint> &pts, const double dt) {
 
 			s = sqrt(dx*dx+dy*dy) / (0.2*dt);
 			for(double k=0;k<=1;k+=(1/s)){
-				tmp.push_back(SPoint((1-k)*pts[i].x+k*pts[j].x,
+				tmp.push_back(Point2((1-k)*pts[i].x+k*pts[j].x,
 							         (1-k)*pts[i].y+k*pts[j].y));
 			}
 
@@ -601,7 +595,7 @@ vector<CenterC> getFreeSpace(const vector<VDEdge> edges, const vector<Voronoi::P
   * 'r'. if no center is detected, triplet (0,0,-1) is returned.
   */
 void getCrossCenterVoronoi(
-		const vector<SPoint> &pts,  const double rt, const double dt,
+		const vector<Point2> &pts,  const double rt, const double dt,
 		double &cx, double &cy, double &radius) {
 
 	if (pts.size() == 0) {
@@ -615,8 +609,8 @@ void getCrossCenterVoronoi(
 
 	// ROS_INFO("Filter: " << ptsRel.size() << " from " << pts.size());
 
-	//	vector<SPoint> mypts(replaceFrontiers(pts,dt));
-	vector<SPoint> mypts(replaceFrontiers(filterRelevance(pts,0.15),dt));
+	//	vector<Point2> mypts(replaceFrontiers(pts,dt));
+	vector<Point2> mypts(replaceFrontiers(filterRelevance(pts,0.15),dt));
 	
 	double minx,maxx,miny,maxy;
 	bool s = getMinMaxValues(mypts,minx,maxx,miny,maxy);
@@ -718,7 +712,7 @@ void getCrossCenterVoronoi(
   * ze zbylych hran se urci nejvetsi volna kruznice lezici uvnitr polygonu
   */
 void getCrossCenterVoronoiWithPointInPolygon(
-		const vector<SPoint> &pts, const vector<SPoint> &frontiers,
+		const vector<Point2> &pts, const vector<Point2> &frontiers,
 		const double rt, const double dt, double &cx, double &cy, double &radius) {
 
 
@@ -726,14 +720,14 @@ void getCrossCenterVoronoiWithPointInPolygon(
 	const double err = 0.01;
 
 	// pts jsou v metrech
-	std::vector<SPoint> mypts = replaceFrontiers(pts,dt);
+	std::vector<Point2> mypts = replaceFrontiers(pts,dt);
 
-	vector<SPoint> myPtsCopy(mypts);
+	vector<Point2> myPtsCopy(mypts);
 
 	// remove unique points
-	vector<SPoint> ptsCopy(mypts.begin(), mypts.end());
+	vector<Point2> ptsCopy(mypts.begin(), mypts.end());
 	std::sort(ptsCopy.begin(),ptsCopy.end(),myLessPts());
-	vector<SPoint>::iterator newEnd = std::unique(ptsCopy.begin(),ptsCopy.end());
+	vector<Point2>::iterator newEnd = std::unique(ptsCopy.begin(),ptsCopy.end());
 
 	mypts.clear();
 	copy(ptsCopy.begin(),newEnd,std::back_inserter(mypts));
@@ -821,7 +815,7 @@ void getCrossCenterVoronoiWithPointInPolygon(
 	
 	// odstran body, ktere nejsou v polygonu
 
-	typedef Lama::PolygonUtils::TPoint<int> RPoint;
+	typedef lama::PolygonUtils::TPoint<int> RPoint;
 	vector<RPoint> polygon;
 	polygon.reserve(pts.size()+1);
 	for(int i=0;i<pts.size();i++) {
@@ -870,7 +864,7 @@ void getCrossCenterVoronoiWithPointInPolygon(
   * 'r'. if no center is detected, triplet (0,0,-1) is returned.
   */
 void getCrossCenterVoronoiWithKDTree(
-		const vector<SPoint> &pts,  const double rt, const double dt,
+		const vector<Point2> &pts,  const double rt, const double dt,
 		double &cx, double &cy, double &radius) {
 
 	if (pts.size() == 0) {
@@ -956,6 +950,6 @@ void getCrossCenterVoronoiWithKDTree(
 
 
 } // namespace Laloc
-} // namespace Lama
+} // namespace lama
 
 

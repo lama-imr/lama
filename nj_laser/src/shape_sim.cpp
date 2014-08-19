@@ -10,7 +10,7 @@
 #include <nj_laser/laloc_utils.h>
 #include <nj_laser/shape_sim.h>
 
-namespace Lama {
+namespace lama {
 namespace Laloc {
 
 using std::pair;
@@ -20,21 +20,18 @@ using std::make_pair;
 using std::cerr;
 using std::ofstream;
 
-typedef SPoint Point;
-
-
-vector<Point> rangeToPoint( const vector<double> &range, const double maxPhi) 
+vector<Point2> rangeToPoint(const vector<double> &range, const double maxPhi) 
 {
 	if (range.size() == 0)
-		return vector<Point>();
+		return vector<Point2>();
 
-	vector<Point> result;
+	vector<Point2> result;
 	result.reserve(range.size());
 
 	double a;
 	for(int i=0;i<range.size();i++) {
 		a = i*maxPhi/range.size();
-		result.push_back(Point(range[i]*cos(a),range[i]*sin(a)));
+		result.push_back(Point2(range[i]*cos(a),range[i]*sin(a)));
 	}
 	return result;
 }
@@ -53,7 +50,7 @@ class myLess {
 	}
 };
 
-inline double getRelevance(const Point &pi, const Point &pj, const Point &pk) {
+inline double getRelevance(const Point2 &pi, const Point2 &pj, const Point2 &pk) {
 	double rel, dx,dy;
 	dx = pi.x - pj.x;
 	dy = pi.y - pj.y;
@@ -67,7 +64,7 @@ inline double getRelevance(const Point &pi, const Point &pj, const Point &pk) {
 	return fabs(rel);
 }
 
-double getRelevance(const list<S> &s, list<S>::const_iterator i, const vector<Point> &pts) {
+double getRelevance(const list<S> &s, list<S>::const_iterator i, const vector<Point2> &pts) {
 	list<S>::const_iterator pred = i;
 	list<S>::const_iterator succ = i;
 	pred--;
@@ -80,7 +77,7 @@ double getRelevance(const list<S> &s, list<S>::const_iterator i, const vector<Po
 	return rel;
 }
 
-vector<Point> filterRelevance(const vector<Point> &pts, const double maxR) {
+vector<Point2> filterRelevance(const vector<Point2> &pts, const double maxR) {
 	
 	if (pts.size() < 3)
 		return pts;
@@ -137,7 +134,7 @@ vector<Point> filterRelevance(const vector<Point> &pts, const double maxR) {
 			break;
 	} while (minR < maxR);
 	
-	vector<Point> res;
+	vector<Point2> res;
 	res.reserve(r.size());
 	for(list<S>::const_iterator i = r.begin(); i != r.end(); i++)
 		res.push_back(pts[i->idx]);
@@ -147,7 +144,7 @@ vector<Point> filterRelevance(const vector<Point> &pts, const double maxR) {
 
 
 
-double getAngleRad(const Point &p1, const Point &p2, const Point &p3) {
+double getAngleRad(const Point2 &p1, const Point2 &p2, const Point2 &p3) {
 
 	const double a = sqrt( 
 			(p1.x-p2.x)*(p1.x-p2.x) +
@@ -178,25 +175,25 @@ double getAngleRad(const Point &p1, const Point &p2, const Point &p3) {
 		if (dist < 0.05) {
 			aco = 0;
 		} else {
-//			std::cerr << "Point near collinera: d="<<dist<<"\n";
+//			std::cerr << "Point near collinear: d="<<dist<<"\n";
 			exit(0);
 		}
 	}
 	return aco;
 }
 
-inline double distance(const Point &p1, const Point &p2) {
+inline double distance(const Point2 &p1, const Point2 &p2) {
 	double dx = p1.x - p2.x;
 	double dy = p1.y - p2.y;
 	return sqrt(dx*dx + dy*dy);
 }
 
 //return true if p3 is left from line (p1,p2)
-inline bool isLeft(const Point &p1, const Point &p2, const Point &p3) {
+inline bool isLeft(const Point2 &p1, const Point2 &p2, const Point2 &p3) {
 	return ( (p2.x - p1.x)*(p3.y-p1.y) - (p3.x-p1.x)*(p2.y-p1.y) ) > 0;
 }
 
-double turningAngle(const Point &p1, const Point &p2, const Point &p3) {
+double turningAngle(const Point2 &p1, const Point2 &p2, const Point2 &p3) {
 	
 	double a = getAngleRad(p1,p2,p3);
 	if (!isLeft(p1,p2,p3))
@@ -205,7 +202,7 @@ double turningAngle(const Point &p1, const Point &p2, const Point &p3) {
 	return a;
 }
 
-vector< pair<double,double> > toTangetSpace(const vector<Point> &pts) {
+vector< pair<double,double> > toTangetSpace(const vector<Point2> &pts) {
 
 	vector< pair<double, double> > res;
 
@@ -278,7 +275,7 @@ template<typename Iter>
 void scale(Iter begin, Iter end, const double s) {
 
 	for(Iter i = begin; i != end; ++i) {
-		*i = Point(i->x*s,i->y*s);
+		*i = Point2(i->x*s,i->y*s);
 	}
 }
 
@@ -286,5 +283,5 @@ void scale(Iter begin, Iter end, const double s) {
 
 
 } // namespace Laloc
-} // namespace Lama
+} // namespace lama
 

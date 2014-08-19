@@ -5,13 +5,14 @@
 #include <list>
 #include <algorithm>
 
-namespace Lama{
+namespace lama{
 namespace PolygonUtils {
 
 using std::list;
 
 template<typename T>
-class TPoint {
+class TPoint
+{
   public:
     TPoint(const T xx=0, const T yy=0) : x(xx), y(yy) {}
     TPoint(const TPoint<T>& p) : x(p.x), y(p.y) {}
@@ -328,8 +329,8 @@ std::vector< TPoint<T> > cutPolygon(const std::vector< TPoint<T> >& pts, const T
   return result;
 }
 
-} // namesapce LaMa
-} // namespace Polygons
+} // namesapce lama
+} // namespace PolygonUtils
 
 #endif // _NJ_LASER_POLYGON_UTILS_H_
 

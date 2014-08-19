@@ -9,7 +9,7 @@
 #include <nj_laser/hist.h>
 #include <nj_laser/cross_detect.h>
 
-namespace Lama {
+namespace lama {
 namespace Laloc {
 
 using std::list;
@@ -360,6 +360,6 @@ int CLaloc::getDescriptorSize() const {
 }
 
 } // namespace Laloc
-} // namespace Lama
+} // namespace lama
 
 

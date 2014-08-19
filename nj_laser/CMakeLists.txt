@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   sensor_msgs
   visualization_msgs
+  lama_common
   lama_interfaces
 )
 
@@ -85,7 +86,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include support/ann/include
   LIBRARIES ${PROJEXT_NAME}
-  CATKIN_DEPENDS roscpp std_msgs geometry_msgs sensor_msgs visualization_msgs lama_interfaces
+  CATKIN_DEPENDS roscpp std_msgs geometry_msgs sensor_msgs visualization_msgs lama_common lama_interfaces
 #  DEPENDS system_lib
 )
 
