@@ -1,3 +1,7 @@
+/*
+ * localization module based on laser detection of a cross
+ */
+
 #ifndef _NJ_LASER_CLALOC_H_
 #define _NJ_LASER_CLALOC_H_
 
@@ -5,10 +9,9 @@
 #include <vector>
 #include <utility>
 
+#include <sensor_msgs/LaserScan.h>
+
 #include <nj_laser/cross_detect.h>
-/*
- * localization module based on laser detection of a cross
- */
 
 namespace lama {
 namespace Laloc {
@@ -29,17 +32,18 @@ class CLaloc {
     CLaloc();
     ~CLaloc();
 
-    void setDescriptor(const std::vector<double> &scan, const double minPhi, const double maxPhi);
+    void setDescriptor(const sensor_msgs::LaserScan& scan);
 
 
 
-    void crossDetect(const std::vector<double> &scan, const double minPhi, const double maxPhi);
+    void crossDetect(const sensor_msgs::LaserScan& scan);
 
     double getCrossCenterX() const;
     double getCrossCenterY() const;
     double getCrossRadius() const;
 
     int getNumExits() const;
+    std::vector<double> getExitAngles() const;
     double getExitAngle(const int i) const;
     double getExitWidth(const int i) const;
     int getDescriptorFFTSize() const;

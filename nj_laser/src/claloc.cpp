@@ -37,7 +37,7 @@ const char* similarityMethodName[] = {
   * so: 
   * working with actDescriptor .. it is ok
   * work with vertex data: descriptor must be extracted by  getDataFromVertex
-  * it means: actDesctiptor =def= getDataFromVertex(vertexData)
+  * it means: actDescriptor =def= getDataFromVertex(vertexData)
   */
 
 /** vertex format:
@@ -81,9 +81,12 @@ CLaloc::~CLaloc()
   actCrossdescriptor.clear();
 }
 
-void CLaloc::setDescriptor(const vector<double> &scan, const double minPhi, const double maxPhi) {
-  crossDetect(scan, minPhi, maxPhi);
-  actDescriptor = scan;
+void CLaloc::setDescriptor(const sensor_msgs::LaserScan& scan)
+{
+  crossDetect(scan);
+  actDescriptor.clear();
+  for (auto range : scan.ranges)
+    actDescriptor.push_back(range);
 }
 
 
@@ -104,7 +107,8 @@ const vector<double> &CLaloc::getCrossDescriptor() const {
  * @return data part of a vertex 
  * see comment above for description of data in vertex
  */
-vector<double> CLaloc::getDataFromVertex(const vector<double> &vertex) const {
+vector<double> CLaloc::getDataFromVertex(const vector<double> &vertex) const
+{
   if (vertex.size() < 5) {
     return vector<double>();
   }
@@ -117,12 +121,18 @@ vector<double> CLaloc::getDataFromVertex(const vector<double> &vertex) const {
  * minPhi angle of the first laser point in radian
  * maxPhi angle of the last laser point in radian
  */
-void CLaloc::crossDetect(const vector<double> &scan, const double minPhi, const double maxPhi)
-{
+void CLaloc::crossDetect(const sensor_msgs::LaserScan& scan)
+{ 
+  const double minPhi = scan.angle_min;
+  const double maxPhi = scan.angle_max;
+  std::vector<double> ranges(scan.ranges.size());
+  for (auto range : scan.ranges)
+    ranges.push_back(range);
+
   struct rusage t1,t2;
 
 
-  double maxRange = *std::max_element(scan.begin(), scan.end());
+  double maxRange = *std::max_element(ranges.begin(), ranges.end());
   //getTime(&t1);
   //CHist hist(0, maxRange, maxRange / 30);
   //hist.add(scan);
@@ -146,35 +156,42 @@ void CLaloc::crossDetect(const vector<double> &scan, const double minPhi, const 
 
   vector<SFrontier> frontiers;
   getTime(&t1);
-  cdPanoramatic3(scan, rtOpt, dt, minPhi, maxPhi, 45 * M_PI / 180.0, frontiers);
+  cdPanoramatic3(ranges, rtOpt, dt, minPhi, maxPhi, 45 * M_PI / 180.0, frontiers);
   getTime(&t2);
   //	ROS_INFO("time of detecting exits from cross: " << getTime(t1,t2)<<" s");
 
   vector<double> res;
 
-  if (frontiers.size() == 0) {
+  if (frontiers.size() == 0)
+  {
     res.push_back(0);
     res.push_back(0);
     res.push_back(-1);
     double m = -1;
     int mi = 0;
-    for(int k = 0; k<scan.size();k++)
-      if (scan[k] > m || m == -1) {
+    for(int k = 0; k<ranges.size();k++)
+    {
+      if (ranges[k] > m || m == -1)
+      {
         mi = k;
-        m = scan[k];
+        m = ranges[k];
       }
-    res.push_back(mi*maxScanPhi/scan.size());
-  } else {
+    }
+    res.push_back(mi*maxScanPhi/ranges.size());
+  }
+  else
+  {
     double cx,cy,cr;
     getTime(&t1);
-    //getCrossCenterVoronoi(cutScan(scan,maxScanPhi,rtOpt),rtOpt,dt,cx,cy,cr);
-    getCrossCenterVoronoiWithKDTree(cutScan(scan,maxScanPhi,rtOpt),rtOpt,dt,cx,cy,cr);
+    //getCrossCenterVoronoi(cutScan(ranges,maxScanPhi,rtOpt),rtOpt,dt,cx,cy,cr);
+    getCrossCenterVoronoiWithKDTree(cutScan(ranges,maxScanPhi,rtOpt),rtOpt,dt,cx,cy,cr);
     getTime(&t2);
     //ROS_INFO("time of cross center search: " << getTime(t1,t2) << " s");
     res.push_back(-cy); // TODO: explain why -cy (minus sign and y before x)
     res.push_back(-cx);
     res.push_back(cr);
-    for(int i=0;i<frontiers.size();i++) {
+    for(int i=0;i<frontiers.size();i++)
+    {
       res.push_back(frontiers[i].angle);
     }
   }
@@ -203,6 +220,16 @@ double CLaloc::getCrossRadius() const {
 
 int CLaloc::getNumExits() const {
   return std::max(0,(int)(actCrossdescriptor.size() - 3));
+}
+
+std::vector<double> CLaloc::getExitAngles() const
+{
+	std::vector<double> exitAngles;
+	for (size_t i = 3; i < actCrossdescriptor.size(); ++i)
+	{
+		exitAngles.push_back(actCrossdescriptor[i]);
+	}
+	return exitAngles;
 }
 
 double CLaloc::getExitAngle(const int i) const {

@@ -5,17 +5,19 @@ project(nj_laser)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  std_msgs
-  geometry_msgs
-  sensor_msgs
-  visualization_msgs
-  lama_common
-  lama_interfaces
+	roscpp
+	actionlib
+	std_msgs
+	geometry_msgs
+	sensor_msgs
+	visualization_msgs
+	lama_common
+	lama_interfaces
 )
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
+find_package(ANN REQUIRED)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -84,9 +86,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include support/ann/include
-  LIBRARIES ${PROJEXT_NAME}
-  CATKIN_DEPENDS roscpp std_msgs geometry_msgs sensor_msgs visualization_msgs lama_common lama_interfaces
+	INCLUDE_DIRS include
+	LIBRARIES ${PROJECT_NAME}
+	CATKIN_DEPENDS ann roscpp std_msgs geometry_msgs sensor_msgs visualization_msgs lama_common lama_interfaces
 #  DEPENDS system_lib
 )
 
@@ -101,15 +103,13 @@ list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
 # include_directories(include)
 include_directories(
   include
-  support/ann/include
   ${catkin_INCLUDE_DIRS}
+  ${ANN_INCLUDE_DIRS}
 )
 
-#ANN static library 
-file(GLOB_RECURSE ANN_SOURCES "${PROJECT_SOURCE_DIR}/support/ann/src/*.cpp")
-add_library(ANN STATIC ${ANN_SOURCES})
-
 ## Declare a cpp library
+add_library(nj_laser_nj_laser src/nj_laser.cpp)
+add_library(nj_laser_visualization src/visualization.cpp)
 
 ## Declare a cpp executable
 set(SRC ${SRC} src/claloc.cpp)
@@ -121,12 +121,18 @@ add_executable(${PROJECT_NAME} src/nj_laser_node.cpp ${SRC})
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(nj_laser_node nj_laser_generate_messages_cpp)
+add_dependencies(nj_laser_nj_laser lama_interfaces)
+add_dependencies(${PROJECT_NAME} lama_interfaces)
+#add_dependencies(${PROJECT_NAME} nj_laser_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}
-  ${CATKIN_DEVEL_PREFIX}/lib/libANN.a
-  ${catkin_LIBRARIES}
+	nj_laser_nj_laser
+	nj_laser_visualization
+	jockey
+	navigating_jockey
+	${catkin_LIBRARIES}
+	${ANN_LIBRARIES}
 )
 
 #############
