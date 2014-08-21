@@ -11,10 +11,11 @@
 
 #include <sensor_msgs/LaserScan.h>
 
+#include <nj_laser/laloc_utils.h>
 #include <nj_laser/cross_detect.h>
 
 namespace lama {
-namespace Laloc {
+namespace nj_laser {
 
 
 typedef enum _SimilarityType {
@@ -48,8 +49,8 @@ class CLaloc {
     double getExitWidth(const int i) const;
     int getDescriptorFFTSize() const;
 
-    const std::vector<double> & getDescriptor() const;
-    const std::vector<double> & getCrossDescriptor() const;
+    const std::vector<double>& getDescriptor() const;
+    const std::vector<double>& getCrossDescriptor() const;
 
     int getAngleShift(const std::vector<double> &des) const;
 
@@ -91,7 +92,7 @@ class CLaloc {
     const static int descriptorFFTSize;
 
     // distance threshold .. longer lines are considered frontiers
-    const static double dt;
+    const static double frontier_width;
 
     // max angle of scan, in radian
     double maxScanPhi;
@@ -120,7 +121,7 @@ class CLaloc {
     std::vector<double> getDataFromVertex(const std::vector<double> &vertex) const;
 };
 
-} // namespace Laloc
+} // namespace nj_laser
 } // namespace lama
 
 #endif // _NJ_LASER_CLALOC_H_

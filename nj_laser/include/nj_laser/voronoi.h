@@ -57,6 +57,8 @@
 * PURPOSE.
 */
 
+/* namespace has been added to include in nj_laser ROS package */
+
 #include <vector>
 #include <math.h>
 #include <stdlib.h>
@@ -68,7 +70,7 @@
 
 using namespace std;
 
-namespace Voronoi {
+namespace voronoi {
 
 /**
  * \class Point
@@ -318,7 +320,8 @@ private:
 
 int scomp(const void *p1,const void *p2);
 
-} // namespace Voronoi
+} // namespace voronoi
+
 #endif
 
 

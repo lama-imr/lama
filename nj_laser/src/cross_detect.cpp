@@ -20,7 +20,7 @@
  */
 
 namespace lama {
-namespace Laloc {
+namespace nj_laser {
 
 using std::vector;
 using lama::Point2;
@@ -513,7 +513,7 @@ void decodePoint(const uint32_t code, double& x, double& y)
 //
 // edges[in] edges, the vertices of which are the circle centers
 // pts[in] pts representing obstacles
-vector<CenterC> getFreeSpace(const vector<VDEdge> edges, const vector<Voronoi::Point> pts)
+vector<CenterC> getFreeSpace(const vector<VDEdge> edges, const vector<voronoi::Point> pts)
 {
 	// build KD-tree from the pts array 
 	const int k = 1; // Max. number of nearest neighbors
@@ -610,23 +610,23 @@ void getCrossCenterVoronoi(
 	// ROS_INFO("Filter: " << ptsRel.size() << " from " << pts.size());
 
 	//	vector<Point2> mypts(replaceFrontiers(pts,dt));
-	vector<Point2> mypts(replaceFrontiers(filterRelevance(pts,0.15),dt));
+	vector<Point2> mypts(replaceFrontiers(filterRelevance(pts, 0.15), dt));
 	
 	double minx,maxx,miny,maxy;
 	bool s = getMinMaxValues(mypts,minx,maxx,miny,maxy);
 
-	vector<Voronoi::Point> vpts;
+	vector<voronoi::Point> vpts;
 	for(int i=0;i<mypts.size();i++)
-		vpts.push_back(Voronoi::Point(mypts[i].x,mypts[i].y));
+		vpts.push_back(voronoi::Point(mypts[i].x,mypts[i].y));
 
-	Voronoi::VoronoiDiagramGenerator *vd = new Voronoi::VoronoiDiagramGenerator();
+	voronoi::VoronoiDiagramGenerator *vd = new voronoi::VoronoiDiagramGenerator();
 	vd->generateVoronoi(&vpts,minx-delta,maxx+delta,miny-delta,maxy+delta,0);
 	vd->resetIterator();
 	vector<VDEdge> edges;
 
 	float x1,y1,x2,y2;
 
- 	Voronoi::GraphEdge eee;
+ 	voronoi::GraphEdge eee;
 	while(vd->getNext(eee)) {
 		if ( !( eee.x1<minx || eee.y1<miny || eee.x1>maxx || eee.y1>maxy || 
 			   eee.x2<minx || eee.y2<miny || eee.x2>maxx || eee.y2>maxy)) 
@@ -745,11 +745,11 @@ void getCrossCenterVoronoiWithPointInPolygon(
 		maxy = std::max(maxy,mypts[i].y);
 	}
 
-	std::vector<Voronoi::Point> vpts;
+	std::vector<voronoi::Point> vpts;
 	for(int i=0;i<mypts.size();i++)
-		vpts.push_back(Voronoi::Point(mypts[i].x,mypts[i].y));
+		vpts.push_back(voronoi::Point(mypts[i].x,mypts[i].y));
 
-	Voronoi::VoronoiDiagramGenerator *vd = new Voronoi::VoronoiDiagramGenerator();
+	voronoi::VoronoiDiagramGenerator *vd = new voronoi::VoronoiDiagramGenerator();
 	vd->generateVoronoi(&vpts,minx-delta,maxx+delta,miny-delta,maxy+delta,0);
 
 	vd->resetIterator();
@@ -757,7 +757,7 @@ void getCrossCenterVoronoiWithPointInPolygon(
 
 	int mmxp = 0;
 
- 	Voronoi::GraphEdge eee;
+ 	voronoi::GraphEdge eee;
 	while(vd->getNext(eee)) {
 		if ( !( eee.x1<minx || eee.y1<miny || eee.x1>maxx || eee.y1>maxy || 
 			   eee.x2<minx || eee.y2<miny || eee.x2>maxx || eee.y2>maxy)) {
@@ -860,13 +860,13 @@ void getCrossCenterVoronoiWithPointInPolygon(
 
 /**
   * return cross center determined by voronoi diagram.
-  * center is returned as triplet (cx,cy,r) where cx,cy uis center of circle with radius
+  * center is returned as triplet (cx,cy,r) where cx,cy is center of circle with radius
   * 'r'. if no center is detected, triplet (0,0,-1) is returned.
   */
 void getCrossCenterVoronoiWithKDTree(
 		const vector<Point2> &pts,  const double rt, const double dt,
-		double &cx, double &cy, double &radius) {
-
+		double &cx, double &cy, double &radius)
+{
 	if (pts.size() == 0) {
 		cx = 0;
 		cy = 0;
@@ -876,28 +876,29 @@ void getCrossCenterVoronoiWithKDTree(
 	const double delta = 10;
 	const double err = 0.01;
 
-	vector<Voronoi::Point> mypts(replaceFrontiersT<Voronoi::Point>(filterRelevance(pts, 0.15), dt));
+	vector<voronoi::Point> mypts(replaceFrontiersT<voronoi::Point>(filterRelevance(pts, 0.15), dt));
 	
 	double minx,maxx,miny,maxy;
 	bool s = getMinMaxValues(mypts,minx,maxx,miny,maxy);
 
-	//	vector<Voronoi::Point> vpts;
+	//	vector<voronoi::Point> vpts;
 	//	for(int i=0;i<mypts.size();i++)
-	//		vpts.push_back(Voronoi::Point(mypts[i].x,mypts[i].y));
+	//		vpts.push_back(voronoi::Point(mypts[i].x,mypts[i].y));
 
 
-	Voronoi::VoronoiDiagramGenerator *vd = new Voronoi::VoronoiDiagramGenerator();
+	voronoi::VoronoiDiagramGenerator *vd = new voronoi::VoronoiDiagramGenerator();
 	vd->generateVoronoi(&mypts,minx-delta,maxx+delta,miny-delta,maxy+delta,0);
 	vd->resetIterator();
 	vector<VDEdge> edges;
 
 	float x1,y1,x2,y2;
 
- 	Voronoi::GraphEdge eee;
-	while(vd->getNext(eee)) {
-		if ( !( eee.x1<minx || eee.y1<miny || eee.x1>maxx || eee.y1>maxy || 
-			   eee.x2<minx || eee.y2<miny || eee.x2>maxx || eee.y2>maxy)) 
-			edges.push_back(VDEdge(eee.x1,eee.y1,eee.x2,eee.y2));
+ 	voronoi::GraphEdge eee;
+	while(vd->getNext(eee))
+  {
+		if (!(eee.x1<minx || eee.y1<miny || eee.x1>maxx || eee.y1>maxy || 
+          eee.x2<minx || eee.y2<miny || eee.x2>maxx || eee.y2>maxy)) 
+			edges.push_back(VDEdge(eee.x1, eee.y1, eee.x2, eee.y2));
 	}
 	eee.next = NULL;
 	// ROS_INFO("voronoi edges num = " << edges.size());
@@ -930,11 +931,14 @@ void getCrossCenterVoronoiWithKDTree(
 		}
 	}
 
-	if (candidates.size() > 0) {
+	if (candidates.size() > 0)
+  {
 		cx = candidates[maxr].x1;
 		cy = candidates[maxr].y1;
 		radius = sqrt(candidates[maxr].r);
-	} else {
+	}
+  else
+  {
 		cx = 0;
 		cy = 0;
 		radius = -1;
@@ -945,11 +949,7 @@ void getCrossCenterVoronoiWithKDTree(
 	delete vd;
 }
 
-
-
-
-
-} // namespace Laloc
+} // namespace nj_laser
 } // namespace lama
 
 

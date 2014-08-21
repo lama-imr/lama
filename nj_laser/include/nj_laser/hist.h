@@ -8,7 +8,7 @@
 #include <fstream>
 
 namespace lama {
-namespace Laloc {
+namespace nj_laser {
 
 class CHist {
 
@@ -134,7 +134,7 @@ std::ostream &operator<<(std::ostream &os, const CHist &h)
 }
 
 
-} // namespace Laloc
+} // namespace nj_laser
 } // namespace lama
 
 #endif // _NJ_LASER_HIST_H_

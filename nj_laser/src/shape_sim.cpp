@@ -11,7 +11,7 @@
 #include <nj_laser/shape_sim.h>
 
 namespace lama {
-namespace Laloc {
+namespace nj_laser {
 
 using std::pair;
 using std::vector;
@@ -282,6 +282,6 @@ void scale(Iter begin, Iter end, const double s) {
 
 
 
-} // namespace Laloc
+} // namespace nj_laser
 } // namespace lama
 

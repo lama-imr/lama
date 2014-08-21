@@ -108,10 +108,11 @@ include_directories(
 )
 
 ## Declare a cpp library
-add_library(nj_laser_nj_laser src/nj_laser.cpp)
-add_library(nj_laser_visualization src/visualization.cpp)
+# add_library(nj_laser)
 
 ## Declare a cpp executable
+set(SRC ${SRC} src/nj_laser.cpp)
+set(SRC ${SRC} src/visualization.cpp)
 set(SRC ${SRC} src/claloc.cpp)
 set(SRC ${SRC} src/laloc_utils.cpp)
 set(SRC ${SRC} src/cross_detect.cpp)
@@ -121,14 +122,11 @@ add_executable(${PROJECT_NAME} src/nj_laser_node.cpp ${SRC})
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(nj_laser_nj_laser lama_interfaces)
 add_dependencies(${PROJECT_NAME} lama_interfaces)
 #add_dependencies(${PROJECT_NAME} nj_laser_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}
-	nj_laser_nj_laser
-	nj_laser_visualization
 	jockey
 	navigating_jockey
 	${catkin_LIBRARIES}

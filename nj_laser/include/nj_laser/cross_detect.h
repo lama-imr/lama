@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include <nj_laser/shape_sim.h>
 #include <nj_laser/laloc_utils.h>
 
 /**
@@ -11,7 +12,7 @@
   */
 
 namespace lama {
-namespace Laloc {
+namespace nj_laser {
 
 /* SFrontier is a line segment through which the robot can go
  * p1 First point
@@ -47,10 +48,10 @@ void getCrossCenterVoronoi(const std::vector<Point2> &pts, const double rt,
     const double dt, double &cx, double &cy, double &radius);
 
 void getCrossCenterVoronoiWithKDTree(
-    const vector<Point2> &pts,  const double rt, const double dt,
+    const std::vector<Point2> &pts,  const double rt, const double dt,
     double &cx, double &cy, double &radius);
 
-} // namespace Laloc
+} // namespace nj_laser
 } // namespace lama
 
 #endif // _NJ_LASER_CROSSDETECT_H_

@@ -10,7 +10,7 @@
 #include <nj_laser/cross_detect.h>
 
 namespace lama {
-namespace Laloc {
+namespace nj_laser {
 
 using std::list;
 using std::vector;
@@ -18,7 +18,7 @@ using std::cerr;
 using std::pair;
 using std::stringstream;
 
-const double CLaloc::dt = 0.7;
+const double CLaloc::frontier_width = 0.7;
 const int CLaloc::descriptorFFTSize = 50;
 
 const char* similarityMethodName[] = {
@@ -68,7 +68,7 @@ CLaloc::CLaloc()
 
   ROS_INFO("CLaloc: chosen similarity method is %s", similarityMethodName[similarityType]);
   ROS_INFO("CLaloc: descriptor size = %i", descriptorFFTSize);
-  ROS_INFO("CLaloc: distance threshold dt=%f", dt);
+  ROS_INFO("CLaloc: distance threshold frontier_width=%f", frontier_width);
 
   ROS_INFO("CLaloc: beamAngleSize = %f", beamAngleSize);
   ROS_INFO("CLaloc: beamOffset = %f", beamOffset);
@@ -92,11 +92,13 @@ void CLaloc::setDescriptor(const sensor_msgs::LaserScan& scan)
 
 
 
-const vector<double> &CLaloc::getDescriptor() const {
+const vector<double>& CLaloc::getDescriptor() const
+{
   return actDescriptor;
 }
 
-const vector<double> &CLaloc::getCrossDescriptor() const {
+const vector<double>& CLaloc::getCrossDescriptor() const
+{
   return actCrossdescriptor;
 }
 
@@ -109,10 +111,11 @@ const vector<double> &CLaloc::getCrossDescriptor() const {
  */
 vector<double> CLaloc::getDataFromVertex(const vector<double> &vertex) const
 {
-  if (vertex.size() < 5) {
+  if (vertex.size() < 5)
+  {
     return vector<double>();
   }
-  return vector<double>(vertex.begin()+4,vertex.end());
+  return vector<double>(vertex.begin() + 4, vertex.end());
 }
 
 /* Compute and return the crossing centers
@@ -129,36 +132,39 @@ void CLaloc::crossDetect(const sensor_msgs::LaserScan& scan)
   for (auto range : scan.ranges)
     ranges.push_back(range);
 
-  struct rusage t1,t2;
+  ros::Time t1;
+  ros::Time t2;
+  ros::Duration dt;
 
 
   double maxRange = *std::max_element(ranges.begin(), ranges.end());
-  //getTime(&t1);
-  //CHist hist(0, maxRange, maxRange / 30);
-  //hist.add(scan);
+  // t1 = ros::Time::now();
+  // CHist hist(0, maxRange, maxRange / 30);
+  // hist.add(scan);
 
-  //std::vector<int> v = hist.getHist();
-  //std::ostringstream s;
-  //s << "hist:";
-  //for(std::vector<int>::iterator it = v.begin(); it != v.end(); ++it)
-  //{
-  //	s << *it << ",";
-  //}
-  //ROS_INFO("%s", s.str().c_str());
+  // std::vector<int> v = hist.getHist();
+  // std::ostringstream s;
+  // s << "hist:";
+  // for(std::vector<int>::iterator it = v.begin(); it != v.end(); ++it)
+  // {
+  // 	s << *it << ",";
+  // }
+  // ROS_INFO("%s", s.str().c_str());
 
-  // rtOpt is the range value where the most range values are. In mostly free
-  // space, this corresponds to the max. laser range.
-  //double rtOpt = 0.95 * hist.getRangeLo(hist.getMaxBin());
+  //  rtOpt is the range value where the most range values are. In mostly free
+  //  space, this corresponds to the max. laser range.
+  // double rtOpt = 0.95 * hist.getRangeLo(hist.getMaxBin());
 
-  //getTime(&t2);
-  //ROS_INFO("time of making histogram: %f s, rtOpt: %f, maxrange: %f", getTime(t1,t2), rtOpt, maxRange);
+  // t2 = ros::Time::now();
+  // ROS_INFO("time of making histogram: %f s, rtOpt: %f, maxrange: %f", t2 - t1, rtOpt, maxRange);
   double rtOpt = 0.9 * maxRange;
 
   vector<SFrontier> frontiers;
-  getTime(&t1);
-  cdPanoramatic3(ranges, rtOpt, dt, minPhi, maxPhi, 45 * M_PI / 180.0, frontiers);
-  getTime(&t2);
-  //	ROS_INFO("time of detecting exits from cross: " << getTime(t1,t2)<<" s");
+  t1 = ros::Time::now();
+  cdPanoramatic3(ranges, rtOpt, frontier_width, minPhi, maxPhi, 45 * M_PI / 180.0, frontiers);
+  t2 = ros::Time::now();
+  dt = t2 - t1;
+  ROS_DEBUG("Time of detecting exits from cross: %.1f s", dt.toSec());
 
   vector<double> res;
 
@@ -169,7 +175,7 @@ void CLaloc::crossDetect(const sensor_msgs::LaserScan& scan)
     res.push_back(-1);
     double m = -1;
     int mi = 0;
-    for(int k = 0; k<ranges.size();k++)
+    for(int k = 0; k < ranges.size(); k++)
     {
       if (ranges[k] > m || m == -1)
       {
@@ -182,44 +188,48 @@ void CLaloc::crossDetect(const sensor_msgs::LaserScan& scan)
   else
   {
     double cx,cy,cr;
-    getTime(&t1);
-    //getCrossCenterVoronoi(cutScan(ranges,maxScanPhi,rtOpt),rtOpt,dt,cx,cy,cr);
-    getCrossCenterVoronoiWithKDTree(cutScan(ranges,maxScanPhi,rtOpt),rtOpt,dt,cx,cy,cr);
-    getTime(&t2);
-    //ROS_INFO("time of cross center search: " << getTime(t1,t2) << " s");
+    t1 = ros::Time::now();
+    //getCrossCenterVoronoi(cutScan(ranges,maxScanPhi,rtOpt),rtOpt,frontier_width,cx,cy,cr);
+    getCrossCenterVoronoiWithKDTree(cutScan(ranges,maxScanPhi,rtOpt),rtOpt,frontier_width,cx,cy,cr);
+    t2 = ros::Time::now();
+    dt = t2 - t1;
+    ROS_DEBUG("Time of cross center search: %.1f s", dt.toSec());
     res.push_back(-cy); // TODO: explain why -cy (minus sign and y before x)
     res.push_back(-cx);
     res.push_back(cr);
-    for(int i=0;i<frontiers.size();i++)
+    for(int i = 0; i < frontiers.size(); i++)
     {
       res.push_back(frontiers[i].angle);
     }
   }
   actFrontiers = frontiers;
-  frontiers.clear();
   actCrossdescriptor = res;
 }
 
-double CLaloc::getCrossCenterX() const {
+double CLaloc::getCrossCenterX() const
+{
   if (actCrossdescriptor.size() > 0)
     return actCrossdescriptor[0];
   return 0;
 }
 
-double CLaloc::getCrossCenterY() const {
+double CLaloc::getCrossCenterY() const
+{
   if (actCrossdescriptor.size() > 1)
     return actCrossdescriptor[1];
   return 0;
 }
 
-double CLaloc::getCrossRadius() const {
+double CLaloc::getCrossRadius() const
+{
   if (actCrossdescriptor.size() > 2)
     return actCrossdescriptor[2];
   return 0;
 }
 
-int CLaloc::getNumExits() const {
-  return std::max(0,(int)(actCrossdescriptor.size() - 3));
+int CLaloc::getNumExits() const
+{
+  return std::max(0, (int)(actCrossdescriptor.size() - 3));
 }
 
 std::vector<double> CLaloc::getExitAngles() const
@@ -232,25 +242,26 @@ std::vector<double> CLaloc::getExitAngles() const
 	return exitAngles;
 }
 
-double CLaloc::getExitAngle(const int i) const {
-  //	if (getNumExits() > 0 && i<getNumExits()) {
-  //		return actCrossdescriptor[3+i];
-  //	} else
-  //		return 0;
-  if (i >=0 && i < actFrontiers.size()) {
+double CLaloc::getExitAngle(const int i) const
+{
+  if (i >=0 && i < actFrontiers.size())
+  {
     return actFrontiers[i].angle;
   }
   return 0;
 }
 
-double CLaloc::getExitWidth(const int i) const {
-  if (i >= 0 && i < actFrontiers.size()) {
+double CLaloc::getExitWidth(const int i) const
+{
+  if (i >= 0 && i < actFrontiers.size())
+  {
     return actFrontiers[i].width;
   }
   return -1;
 }
 
-int CLaloc::getDescriptorFFTSize() const {
+int CLaloc::getDescriptorFFTSize() const
+{
   return descriptorFFTSize;
 }
 
@@ -260,7 +271,8 @@ int CLaloc::getDescriptorFFTSize() const {
  * see comment in begging of this file with description of data format
  */
 
-std::string CLaloc::getLocalizeMessage(const double xpos, const double ypos) const {
+std::string CLaloc::getLocalizeMessage(const double xpos, const double ypos) const
+{
   /*
      char tmp[200];
 
@@ -297,7 +309,8 @@ std::string CLaloc::getLocalizeMessage(const double xpos, const double ypos) con
   return ss.str();
 }
 
-std::string CLaloc::getInitMessage() const {
+std::string CLaloc::getInitMessage() const
+{
   stringstream ss;
   ss <<  "<LOCALIZING>\n";
   ss << "<ALGORITHM type=\"LALOC\" version=\"1.0\" anytime=\"TRUE\">";
@@ -306,13 +319,14 @@ std::string CLaloc::getInitMessage() const {
   return ss.str();
 }
 
-std::string CLaloc::getFinishMessage() const {
+std::string CLaloc::getFinishMessage() const
+{
   std::string tmp = "</LOCALIZING>";
   return tmp;
 }
 
-std::string CLaloc::getLocalizedMessage(const double prob, const double shift ) const {
-
+std::string CLaloc::getLocalizedMessage(const double prob, const double shift ) const
+{
   stringstream ss;
 
   ss << "<POSITION probability=\"" << prob << "\">"<<shift<<"</POSITION>";
@@ -333,8 +347,8 @@ std::string CLaloc::getLocalizedMessage(const double prob, const double shift ) 
 
 /** for each detected edge (exit from a cross) send 
  * one edge */
-std::string CLaloc::getEdgesMessage() const {
-
+std::string CLaloc::getEdgesMessage() const
+{
   stringstream ss;
 
   ss << "<EDGES>";
@@ -346,47 +360,57 @@ std::string CLaloc::getEdgesMessage() const {
   return ss.str();
 
 }
-void CLaloc::setMaxPhi(const double phi) {
+
+void CLaloc::setMaxPhi(const double phi)
+{
   maxScanPhi = phi;
 }	
 
-double CLaloc::getMaxPhi(const double phi) const {
+double CLaloc::getMaxPhi(const double phi) const
+{
   return maxScanPhi;
 }
 
-double CLaloc::getBeamAngleSize() const {
+double CLaloc::getBeamAngleSize() const
+{
   return beamAngleSize;
 }
 
-double CLaloc::getBeamOffset() const {
+double CLaloc::getBeamOffset() const
+{
   return beamOffset;
 }
 
-double CLaloc::getBeamResolution() const {
+double CLaloc::getBeamResolution() const
+{
   return beamResolution;
 }
 
-void CLaloc::setBeamAngleSize(const double size) {
+void CLaloc::setBeamAngleSize(const double size)
+{
   beamAngleSize = size;
   ROS_INFO("CLaloc: beamAngleSize set to %f" ,size);
 }
 
 
-void CLaloc::setBeamOffset(const double offset) {
+void CLaloc::setBeamOffset(const double offset)
+{
   beamOffset = offset;
   ROS_INFO("CLaloc: beamOffset set to %f" ,offset);
 }
 
-void CLaloc::setBeamResolution(const double resolution) {
+void CLaloc::setBeamResolution(const double resolution)
+{
   beamResolution = resolution;
   ROS_INFO("CLaloc: beamResolution set to %f " , resolution);
 }
 
-int CLaloc::getDescriptorSize() const {
+int CLaloc::getDescriptorSize() const
+{
   return actDescriptor.size();
 }
 
-} // namespace Laloc
+} // namespace nj_laser
 } // namespace lama
 
 

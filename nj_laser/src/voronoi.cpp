@@ -54,11 +54,13 @@
  * PURPOSE.
  */
 
+/* namespaces have been added to include in nj_laser ROS package */
+
 #include <stdio.h>
 
 #include <nj_laser/voronoi.h>
 
-namespace Voronoi {
+namespace voronoi {
 
 VoronoiDiagramGenerator::VoronoiDiagramGenerator(){
   siteidx = 0;
@@ -1058,5 +1060,6 @@ Site * VoronoiDiagramGenerator::nextone()
 }
 
 
-} // namespace
+} // namespace voronoi
+
 
