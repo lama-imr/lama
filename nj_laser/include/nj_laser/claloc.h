@@ -11,12 +11,15 @@
 
 #include <sensor_msgs/LaserScan.h>
 
+#include <lama_common/frontier.h>
+
 #include <nj_laser/laloc_utils.h>
 #include <nj_laser/cross_detect.h>
 
 namespace lama {
 namespace nj_laser {
 
+using lama::Frontier;
 
 typedef enum _SimilarityType {
   NCC_FFT = 0,
@@ -104,7 +107,7 @@ class CLaloc {
     // descriptor of a cross
     // if no cros .. cx=cy=cr=0
     std::vector<double> actCrossdescriptor;
-    std::vector<SFrontier> actFrontiers;
+    std::vector<Frontier> actFrontiers;
 
     SimilarityType similarityType;
 

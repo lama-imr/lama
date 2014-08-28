@@ -87,16 +87,16 @@ find_package(ANN REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 	INCLUDE_DIRS include
-	LIBRARIES ${PROJECT_NAME}
+	# LIBRARIES ${PROJECT_NAME}
 	CATKIN_DEPENDS ann roscpp std_msgs geometry_msgs sensor_msgs visualization_msgs lama_common lama_interfaces
-#  DEPENDS system_lib
+	# DEPENDS system_lib
 )
 
 ###########
 ## Build ##
 ###########
 
-list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -127,7 +127,6 @@ add_dependencies(${PROJECT_NAME} lama_interfaces)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}
-	jockey
 	navigating_jockey
 	${catkin_LIBRARIES}
 	${ANN_LIBRARIES}

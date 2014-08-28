@@ -13,12 +13,14 @@ NJLaser::NJLaser(std::string name) : lama::interfaces::NavigatingJockey(name)
 void NJLaser::onTraverse()
 {
   unsetGoalReached();
-  laserHandler_ = nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 50, &NJLaser::handleLaser, this);
+  laserHandler_ = nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 1, &NJLaser::handleLaser, this);
+  ROS_DEBUG("Laser handler started");
   
   ros::Rate r(50);
   while (ros::ok())
   {
     std::vector<double> exitAngles = cross_detector.getExitAngles();
+    ROS_DEBUG("Crossing detected with %zu exits", exitAngles.size());
     if (exitAngles.size() > 2)
     {
       geometry_msgs::Point goal;
@@ -34,6 +36,14 @@ void NJLaser::onTraverse()
         laserHandler_.shutdown();
         break;
       }
+    }
+    else
+    {
+      // Go straight if no crossing is detected.
+      geometry_msgs::Point goal;
+      goal.x = 0.5;
+      geometry_msgs::Twist twist = goToGoal(goal);
+      pub_twist_.publish(twist);
     }
     r.sleep();
   }

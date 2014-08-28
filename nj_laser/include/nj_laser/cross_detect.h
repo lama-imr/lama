@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include <lama_common/point.h>
+#include <lama_common/frontier.h>
 #include <nj_laser/shape_sim.h>
 #include <nj_laser/laloc_utils.h>
 
@@ -14,33 +16,16 @@
 namespace lama {
 namespace nj_laser {
 
-/* SFrontier is a line segment through which the robot can go
- * p1 First point
- * p2 Second point, so that angle(r-p1, r-p2) is positive, where r is the laser base
- * width Segment length, i.e. width of free space
- * angle ?
- */
-struct SFrontier {
-
-  SFrontier(const Point2& ip1, const Point2& ip2, const double iwidth, const double iangle) :
-    p1(ip1),
-    p2(ip2),
-    width(iwidth),
-    angle(iangle)
-  {
-  }
-
-  Point2 p1, p2;
-  double width;
-  double angle;
-};
+using std::vector;
+using lama::Point2;
+using lama::Frontier;
 
 /** @brief cross detection with frontiers.
   */
 void cdPanoramatic3(
     const std::vector<double> &scan, const double rt, const double dt,
     const double minPhi, const double fov, const double maxFrontierAngle,
-    std::vector<SFrontier> &frontiers);
+    std::vector<Frontier> &frontiers);
 
 /** @brief return center of a cross by finding largest circle. works fine
   */

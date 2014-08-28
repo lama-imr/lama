@@ -1,4 +1,4 @@
-/* Memory-less navigating jockey based on LaserScan
+/* Action server for the memory-less navigating jockey based on LaserScan
 */
 
 #ifndef _NJ_LASER_NJ_LASER_H_

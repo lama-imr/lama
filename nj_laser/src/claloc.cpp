@@ -159,7 +159,7 @@ void CLaloc::crossDetect(const sensor_msgs::LaserScan& scan)
   // ROS_INFO("time of making histogram: %f s, rtOpt: %f, maxrange: %f", t2 - t1, rtOpt, maxRange);
   double rtOpt = 0.9 * maxRange;
 
-  vector<SFrontier> frontiers;
+  vector<Frontier> frontiers;
   t1 = ros::Time::now();
   cdPanoramatic3(ranges, rtOpt, frontier_width, minPhi, maxPhi, 45 * M_PI / 180.0, frontiers);
   t2 = ros::Time::now();
