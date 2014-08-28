@@ -5,13 +5,17 @@ project(lj_laser)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  lama_interfaces
-  roscpp
+	actionlib
+	lama_common
+	lama_interfaces
+	roscpp
+	sensor_msgs
 )
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
-
+find_package(CGAL REQUIRED COMPONENTS Core)
+set(CGAL_DONT_OVERRIDE_CMAKE_FLAGS TRUE CACHE BOOL "Don't override flags")
+include(${CGAL_USE_FILE})
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -79,8 +83,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES lj_laser
+	INCLUDE_DIRS include
+	LIBRARIES crossing_detector
 #  CATKIN_DEPENDS lama_interfaces roscpp
 #  DEPENDS system_lib
 )
@@ -93,25 +97,35 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
-  ${catkin_INCLUDE_DIRS}
+	include
+	${catkin_INCLUDE_DIRS}
+	${CGAL_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
-# add_library(lj_laser
-#   src/${PROJECT_NAME}/lj_laser.cpp
-# )
+add_library(crossing_detector src/crossing_detector.cpp)
 
 ## Declare a cpp executable
-# add_executable(lj_laser_node src/lj_laser_node.cpp)
+set(SRC ${SRC} src/lj_laser.cpp)
+set(SRC ${SRC} src/crossing_detector.cpp)
+add_executable(lj_laser src/lj_laser_node.cpp ${SRC})
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(lj_laser_node lj_laser_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(lj_laser_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(crossing_detector
+	${catkin_LIBRARIES}
+	${CGAL_LIBRARIES}
+	${CGAL_3RD_PARTY_LIBRARIES}
+	)
+
+target_link_libraries(lj_laser
+	${catkin_LIBRARIES}
+	${CGAL_LIBRARIES}
+	${CGAL_3RD_PARTY_LIBRARIES}
+	)
 
 #############
 ## Install ##
