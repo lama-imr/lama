@@ -4,6 +4,8 @@
  *
  */
 
+#include <string>
+
 #include <ros/ros.h>
 #include <ros/console.h> // to change the log level to debug
 
