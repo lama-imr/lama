@@ -51,9 +51,9 @@ void LJLaser::onGetVertexDescriptor()
   ros::Time start_time = ros::Time::now();
 
   // Add the LaserScan to the database.
-  lama_interfaces::lmi_laser_descriptor_set scan_ds;
+  lama_interfaces::SetVectorLaserScan scan_ds;
   scan_ds.request.descriptor.push_back(scan_);
-  ros::service::call("lmi_laser_descriptor_setter", scan_ds);
+  ros::service::call("laser_descriptor_setter", scan_ds);
   result_.descriptors.push_back(scan_ds.response.id);
 
   // Add the list of double (x, y, r).

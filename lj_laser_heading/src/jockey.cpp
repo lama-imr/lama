@@ -23,8 +23,8 @@ Jockey::Jockey(std::string name, const double frontier_width, const double max_f
   client.waitForExistence();
   lama_interfaces::AddInterface srv;
   srv.request.interface_name = laser_interface_name_;
-  srv.request.get_service_message = "lama_interfaces/lmi_laser_descriptor_get";
-  srv.request.set_service_message = "lama_interfaces/lmi_laser_descriptor_set";
+  srv.request.get_service_message = "lama_interfaces/GetVectorLaserScan";
+  srv.request.set_service_message = "lama_interfaces/SetVectorLaserScan";
   if (!client.call(srv))
   {
     ROS_ERROR("Failed to call service AddInterface");
@@ -34,7 +34,7 @@ Jockey::Jockey(std::string name, const double frontier_width, const double max_f
     ROS_ERROR("Failed to create the Lama interface");
   }
   // Initialize the client for the LaserScan getter service (interface to map).
-  laser_descriptor_getter_ = nh_.serviceClient<lama_interfaces::lmi_laser_descriptor_get>(srv.response.get_service_name);
+  laser_descriptor_getter_ = nh_.serviceClient<lama_interfaces::GetVectorLaserScan>(srv.response.get_service_name);
   laser_descriptor_getter_.waitForExistence();
 
   // Initialize the client for the similarity server.
@@ -102,9 +102,9 @@ void Jockey::onGetVertexDescriptor()
   rotateScan();
 
   // Add the LaserScan to the database.
-  lama_interfaces::lmi_laser_descriptor_set scan_ds;
+  lama_interfaces::SetVectorLaserScan scan_ds;
   scan_ds.request.descriptor.push_back(scan_);
-  ros::service::call("lmi_laser_descriptor_setter", scan_ds);
+  ros::service::call("laser_descriptor_setter", scan_ds);
   result_.descriptors.push_back(scan_ds.response.id);
 
   // Add the list of double (x, y, r).
@@ -215,7 +215,7 @@ void Jockey::onGetSimilarity()
     {
       if (desc_srv.response.descriptors[j].interface_name == laser_interface_name_)
       {
-        lama_interfaces::lmi_laser_descriptor_get scan_srv;
+        lama_interfaces::GetVectorLaserScan scan_srv;
         scan_srv.request.id.descriptor_id = desc_srv.response.descriptors[j].descriptor_id;
         laser_descriptor_getter_.call(scan_srv);
         geometry_msgs::Polygon polygon = scanToPolygon(scan_srv.response.descriptor[0]);
