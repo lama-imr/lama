@@ -13,7 +13,7 @@
 
 #include <lama_common/frontier.h>
 #include <lama_interfaces/ActOnMap.h>
-#include <lama_interfaces/LamaMapAction.h>
+#include <lama_interfaces/MapAction.h>
 #include <lama_interfaces/AddInterface.h>
 #include <lama_interfaces/localizing_jockey.h>
 #include <lama_interfaces/GetVectorLaserScan.h>

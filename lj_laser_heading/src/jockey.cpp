@@ -196,7 +196,7 @@ void Jockey::onGetSimilarity()
 
   // Get all scans from database.
   lama_interfaces::ActOnMap srv;
-  srv.request.action.action = lama_interfaces::LamaMapAction::GET_VERTEX_LIST;
+  srv.request.action.action = lama_interfaces::MapAction::GET_VERTEX_LIST;
   map_agent_.call(srv);
   
   // Iterate over vertices and get the associated Polygon (from the LaserScan).
@@ -208,7 +208,7 @@ void Jockey::onGetSimilarity()
   {
     // Get all descriptors associated with the current vertex.
     lama_interfaces::ActOnMap desc_srv;
-    desc_srv.request.action.action = lama_interfaces::LamaMapAction::PULL_VERTEX;
+    desc_srv.request.action.action = lama_interfaces::MapAction::PULL_VERTEX;
     desc_srv.request.object.id = srv.response.objects[i].id;
     map_agent_.call(desc_srv);
     // Transform the LaserScan into a Polygon.
