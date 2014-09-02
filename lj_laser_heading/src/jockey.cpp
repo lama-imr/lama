@@ -112,22 +112,23 @@ void Jockey::onGetVertexDescriptor()
   double y;
   double r;
   crossing_detector_.crossingCenter(scan_, x, y, r);
-  lama_interfaces::lmi_vector_double_set vdouble_ds;
+  lama_interfaces::SetVectorDouble vdouble_ds;
   vdouble_ds.request.descriptor.push_back(x);
   vdouble_ds.request.descriptor.push_back(y);
   vdouble_ds.request.descriptor.push_back(r);
-  ros::service::call("lmi_vector_double_descriptor_setter", vdouble_ds);
+  // TODO: call the service to create the service.
+  ros::service::call("vector_double_setter", vdouble_ds);
   result_.descriptors.push_back(vdouble_ds.response.id);
 
   // Add the list of frontier angles.
   std::vector<Frontier> frontiers;
   crossing_detector_.frontiers(scan_, frontiers);
-  lama_interfaces::lmi_vector_double_set ds;
+  lama_interfaces::SetVectorDouble ds;
   for (std::vector<Frontier>::const_iterator it = frontiers.begin(); it != frontiers.end(); ++it)
   {
     ds.request.descriptor.push_back(it->angle);
   }
-  ros::service::call("lmi_vector_double_descriptor_setter", ds);
+  ros::service::call("vector_double_setter", ds);
   result_.descriptors.push_back(ds.response.id);
   
   result_.state = lama_interfaces::LocalizeResult::DONE;

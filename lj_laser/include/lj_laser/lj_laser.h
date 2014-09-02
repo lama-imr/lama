@@ -9,7 +9,7 @@
 #include <lama_common/frontier.h>
 #include <lama_interfaces/localizing_jockey.h>
 #include <lama_interfaces/SetVectorLaserScan.h>
-#include <lama_interfaces/lmi_vector_double_set.h>
+#include <lama_interfaces/SetVectorDouble.h>
 
 #include <lj_laser/crossing_detector.h>
 
