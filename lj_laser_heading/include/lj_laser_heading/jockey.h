@@ -12,9 +12,14 @@
 #include <geometry_msgs/Quaternion.h>
 
 #include <lama_common/frontier.h>
+#include <lama_interfaces/ActOnMap.h>
+#include <lama_interfaces/LamaMapAction.h>
+#include <lama_interfaces/AddInterface.h>
 #include <lama_interfaces/localizing_jockey.h>
+#include <lama_interfaces/lmi_laser_descriptor_get.h>
 #include <lama_interfaces/lmi_laser_descriptor_set.h>
 #include <lama_interfaces/lmi_vector_double_set.h>
+#include <polygon_matcher/PolygonSimilarity.h>
 
 #include <lj_laser/crossing_detector.h>
 
@@ -35,6 +40,8 @@ class Jockey : public lama::interfaces::LocalizingJockey
     // virtual void onInterrupt();
     // virtual void onContinue();
 
+    void set_similarity_server_name(std::string name) {similarity_server_name_ = name;}
+
   private:
 
     void getData();
@@ -44,7 +51,9 @@ class Jockey : public lama::interfaces::LocalizingJockey
     void rotateScan();
 
     // Reception and storage of LaserScan and Pose.
+    std::string laser_interface_name_;
     ros::Subscriber laserHandler_;
+    ros::ServiceClient laser_descriptor_getter_;
     ros::Subscriber poseHandler_;
     bool data_received_;
     ros::Time scan_reception_time_;
@@ -52,6 +61,10 @@ class Jockey : public lama::interfaces::LocalizingJockey
     const static ros::Duration max_data_time_delta_;  //!> Max time interval between reception of scan_ and pose_.
     sensor_msgs::LaserScan scan_;
     geometry_msgs::Pose pose_;  //!> Only the heading information will be used.
+
+    // Similarity server.
+    std::string similarity_server_name_;
+    ros::ServiceClient similarity_server_;
 
     lama::lj_laser::CrossingDetector crossing_detector_;
 };

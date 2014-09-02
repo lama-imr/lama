@@ -3,15 +3,42 @@
 namespace lama {
 namespace lj_laser_heading {
 
+// Maximum time interval between reception of LaserScan and Pose, whichever
+// comes first. The jockey will reject all data until one LaserScan message and
+// one Pose message come shortly one after another.
+// TODO: write as a parameter.
 const ros::Duration Jockey::max_data_time_delta_ = ros::Duration(0.050);
 
 Jockey::Jockey(std::string name, const double frontier_width, const double max_frontier_angle) :
   lama::interfaces::LocalizingJockey(name),
+  laser_interface_name_(name + "_laser_descriptor"),
   data_received_(false),
   scan_reception_time_(ros::Time(0)),
   pose_reception_time_(ros::Time(0)),
+  similarity_server_name_("similarity_server"),
   crossing_detector_(frontier_width, max_frontier_angle)
 {
+  // Create the getter and setter services for LaserScan descriptors (setter not used).
+  ros::ServiceClient client = nh_.serviceClient<lama_interfaces::AddInterface>("interface_factory");
+  client.waitForExistence();
+  lama_interfaces::AddInterface srv;
+  srv.request.interface_name = laser_interface_name_;
+  srv.request.get_service_message = "lama_interfaces/lmi_laser_descriptor_get";
+  srv.request.set_service_message = "lama_interfaces/lmi_laser_descriptor_set";
+  if (!client.call(srv))
+  {
+    ROS_ERROR("Failed to call service AddInterface");
+  }
+  if (!srv.response.success)
+  {
+    ROS_ERROR("Failed to create the Lama interface");
+  }
+  // Initialize the client for the LaserScan getter service (interface to map).
+  laser_descriptor_getter_ = nh_.serviceClient<lama_interfaces::lmi_laser_descriptor_get>(srv.response.get_service_name);
+  laser_descriptor_getter_.waitForExistence();
+
+  // Initialize the client for the similarity server.
+  similarity_server_ = nh_.serviceClient<polygon_matcher::PolygonSimilarity>(similarity_server_name_);
 }
 
 /* Start the subscribers, wait for a LaserScan and a Pose, and exit upon reception.
@@ -22,6 +49,7 @@ void Jockey::getData()
   laserHandler_ = nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 1, &Jockey::handleLaser, this);
   poseHandler_ = nh_.subscribe<geometry_msgs::Pose>("pose", 1, &Jockey::handlePose, this);
   ROS_DEBUG("LaserScan and Pose handler started");
+  laserHandler_.getTopic();
   ros::Rate r(100);
   while (ros::ok())
   {
@@ -166,9 +194,50 @@ void Jockey::onGetSimilarity()
   geometry_msgs::Polygon current_polygon = scanToPolygon(scan_);
 
   // Get all scans from database.
-  // Compare them to the current scan by calling one of the pm_??? service.
-  // Return what?
+  lama_interfaces::ActOnMap srv;
+  srv.request.action.action = lama_interfaces::LamaMapAction::GET_VERTEX_LIST;
+  map_agent_.call(srv);
   
+  // Iterate over vertices and get the associated Polygon (from the LaserScan).
+  std::vector<int32_t> vertex_indexes;
+  vertex_indexes.reserve(srv.response.objects.size());
+  std::vector<geometry_msgs::Polygon> polygons;
+  polygons.reserve(srv.response.objects.size());
+  for (size_t i = 0; i < srv.response.objects.size(); ++i)
+  {
+    // Get all descriptors associated with the current vertex.
+    lama_interfaces::ActOnMap desc_srv;
+    desc_srv.request.action.action = lama_interfaces::LamaMapAction::PULL_VERTEX;
+    desc_srv.request.object.id = srv.response.objects[i].id;
+    map_agent_.call(desc_srv);
+    // Transform the LaserScan into a Polygon.
+    for (size_t j = 0; j < desc_srv.response.descriptors.size(); ++j)
+    {
+      if (desc_srv.response.descriptors[j].interface_name == laser_interface_name_)
+      {
+        lama_interfaces::lmi_laser_descriptor_get scan_srv;
+        scan_srv.request.id.descriptor_id = desc_srv.response.descriptors[j].descriptor_id;
+        laser_descriptor_getter_.call(scan_srv);
+        geometry_msgs::Polygon polygon = scanToPolygon(scan_srv.response.descriptor[0]);
+        vertex_indexes.push_back(desc_srv.response.descriptors[j].object_id);
+        polygons.push_back(polygon);
+      }
+    }
+  }
+  
+  // Compare them to the current polygon by calling one of the pm_* service.
+  polygon_matcher::PolygonSimilarity simi_srv;
+  simi_srv.request.polygon1 = current_polygon;
+  result_.idata.reserve(vertex_indexes.size());
+  result_.fdata.reserve(vertex_indexes.size());
+  for (size_t i = 0; i < vertex_indexes.size(); ++i)
+  {
+    simi_srv.request.polygon2 = polygons[i];
+    similarity_server_.call(simi_srv);
+    result_.idata.push_back(vertex_indexes[i]);
+    result_.fdata.push_back(simi_srv.response.raw_similarity);
+  }
+
   result_.state = lama_interfaces::LocalizeResult::DONE;
   result_.completion_time = ros::Time::now() - start_time;
   server_.setSucceeded(result_);

@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
 	lama_common
 	lama_interfaces
 	lj_laser
+	pm_mcc
 	roscpp
 	sensor_msgs
 )
