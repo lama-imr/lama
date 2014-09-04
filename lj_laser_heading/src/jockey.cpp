@@ -89,10 +89,12 @@ void Jockey::handlePose(const geometry_msgs::Pose msg)
     data_received_ = true;
 }
 
-/* Save the vertex descriptors associated with the current robot position in the database.
+/* Return the vertex descriptors associated with the current robot position through result_.
  *
  * The descriptor are a LaserScan, a list of double (x, y, r), and a list of frontier angles.
  */
+// TODO: Discuss with Karel the exact role of onGetVertexDescriptor
+// TODO: in particular: should it save something in the database?
 void Jockey::onGetVertexDescriptor()
 {
   getData();
@@ -101,35 +103,35 @@ void Jockey::onGetVertexDescriptor()
   // Rotate scan_ so that scan_.angle_min and scan_.angle_max are absolute angles.
   rotateScan();
 
-  // Add the LaserScan to the database.
-  lama_interfaces::SetVectorLaserScan scan_ds;
-  scan_ds.request.descriptor.push_back(scan_);
-  ros::service::call("laser_descriptor_setter", scan_ds);
-  result_.descriptors.push_back(scan_ds.response.id);
+  // Add the LaserScan to the descriptor list.
+  lama_interfaces::SetVectorLaserScan vscan_setter;
+  vscan_setter.request.descriptor.push_back(scan_);
+  ros::service::call("vector_laser_setter", vscan_setter);
+  result_.descriptors.push_back(vscan_setter.response.id);
 
   // Add the list of double (x, y, r).
   double x;
   double y;
   double r;
   crossing_detector_.crossingCenter(scan_, x, y, r);
-  lama_interfaces::SetVectorDouble vdouble_ds;
-  vdouble_ds.request.descriptor.push_back(x);
-  vdouble_ds.request.descriptor.push_back(y);
-  vdouble_ds.request.descriptor.push_back(r);
-  // TODO: call the service to create the service.
-  ros::service::call("vector_double_setter", vdouble_ds);
-  result_.descriptors.push_back(vdouble_ds.response.id);
+  lama_interfaces::SetVectorDouble vdouble_setter;
+  vdouble_setter.request.descriptor.push_back(x);
+  vdouble_setter.request.descriptor.push_back(y);
+  vdouble_setter.request.descriptor.push_back(r);
+  // TODO: call the interface_factory service in constructor to create the setter service.
+  ros::service::call("vector_double_setter", vdouble_setter);
+  result_.descriptors.push_back(vdouble_setter.response.id);
 
   // Add the list of frontier angles.
   std::vector<Frontier> frontiers;
   crossing_detector_.frontiers(scan_, frontiers);
-  lama_interfaces::SetVectorDouble ds;
+  lama_interfaces::SetVectorDouble vangles_setter;
   for (std::vector<Frontier>::const_iterator it = frontiers.begin(); it != frontiers.end(); ++it)
   {
-    ds.request.descriptor.push_back(it->angle);
+    vangles_setter.request.descriptor.push_back(it->angle);
   }
-  ros::service::call("vector_double_setter", ds);
-  result_.descriptors.push_back(ds.response.id);
+  ros::service::call("vector_double_setter", vangles_setter);
+  result_.descriptors.push_back(vangles_setter.response.id);
   
   result_.state = lama_interfaces::LocalizeResult::DONE;
   result_.completion_time = ros::Time::now() - start_time;
