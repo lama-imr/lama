@@ -29,8 +29,8 @@ typedef enum _SimilarityType {
   NCC_FFT_FROM_SCAN
 } SimilarityType;
 
-class CLaloc {
-
+class CLaloc
+{
 	public:
 
     CLaloc();
@@ -91,7 +91,7 @@ class CLaloc {
 
   private:
 
-    // lenght of fft of laser signal
+    // length of fft of laser signal
     const static int descriptorFFTSize;
 
     // distance threshold .. longer lines are considered frontiers

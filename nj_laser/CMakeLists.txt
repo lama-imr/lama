@@ -6,7 +6,6 @@ project(nj_laser)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
 	roscpp
-	actionlib
 	std_msgs
 	geometry_msgs
 	sensor_msgs

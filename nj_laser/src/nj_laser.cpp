@@ -17,7 +17,7 @@ void NJLaser::onTraverse()
   ROS_DEBUG("Laser handler started");
   
   ros::Rate r(50);
-  while (ros::ok())
+  while (ros::ok() && goal_.action == lama_interfaces::NavigateGoal::TRAVERSE)
   {
     std::vector<double> exitAngles = cross_detector.getExitAngles();
     ROS_DEBUG("Crossing detected with %zu exits", exitAngles.size());
@@ -73,7 +73,7 @@ void NJLaser::handleLaser(const sensor_msgs::LaserScan msg)
 
   cross_detector.crossDetect(msg);
   std::vector<double> desc = cross_detector.getCrossDescriptor();
-  ROS_INFO("CROSS x: %.3f, y: %.3f, r: %.3f, nroads: %lu", desc[0], desc[1], desc[2], desc.size() - 3);
+  ROS_DEBUG("Crossing x: %.3f, y: %.3f, r: %.3f, nroads: %zu", desc[0], desc[1], desc[2], desc.size() - 3);
 
   // Visualization: a sphere at detected crossing center
 	if (pub_crossing_marker_.getNumSubscribers())

@@ -5,7 +5,6 @@ project(lj_laser_heading)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-	actionlib
 	geometry_msgs
 	lama_common
 	lama_interfaces

@@ -1,4 +1,18 @@
-/* Action server for the memory-less navigating jockey based on LaserScan
+/* Action server for the memory-less navigating jockey based on LaserScan.
+ *
+ * The role of this jockey is to travel to the next crossing.
+ * The action is done when the robot reaches the crossing center.
+ *
+ * Interaction with the map:
+ * - Getter: none
+ * - Setter: none.
+ *
+ * Subscribers (other than map-related):
+ * - sensor_msg::LaserScan, "~/base_scan", 360-deg laser-scan.
+ *
+ * Publishers (other than map-related):
+ * - visualization_msgs::Marker, "~/crossing_marker", a sphere at the crossing center.
+ * - visualization_msgs::Marker, "~/exits_marker", lines from crossing center towards exits.
 */
 
 #ifndef _NJ_LASER_NJ_LASER_H_
