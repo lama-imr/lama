@@ -20,7 +20,7 @@
 
 #include <sensor_msgs/LaserScan.h>
 
-#include <lama_interfaces/navigating_jockey.h>
+#include <lama_jockeys/navigating_jockey.h>
 
 #include <nj_laser/claloc.h>
 #include <nj_laser/visualization.h>
@@ -28,7 +28,7 @@
 namespace lama {
 namespace nj_laser {
 
-class NJLaser : public lama::interfaces::NavigatingJockey
+class NJLaser : public lama::NavigatingJockey
 {
   public:
 

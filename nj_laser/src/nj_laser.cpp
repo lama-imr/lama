@@ -3,7 +3,7 @@
 namespace lama {
 namespace nj_laser {
 
-NJLaser::NJLaser(std::string name) : lama::interfaces::NavigatingJockey(name)
+NJLaser::NJLaser(std::string name) : lama::NavigatingJockey(name)
 {
 	pub_crossing_marker_ = nh_.advertise<visualization_msgs::Marker>("crossing_marker", 50, true);
   pub_exits_marker_ = nh_.advertise<visualization_msgs::Marker> ("exits_marker", 50, true);
@@ -17,7 +17,7 @@ void NJLaser::onTraverse()
   ROS_DEBUG("Laser handler started");
   
   ros::Rate r(50);
-  while (ros::ok() && goal_.action == lama_interfaces::NavigateGoal::TRAVERSE)
+  while (ros::ok() && goal_.action == lama_jockeys::NavigateGoal::TRAVERSE)
   {
     std::vector<double> exitAngles = cross_detector.getExitAngles();
     ROS_DEBUG("Crossing detected with %zu exits", exitAngles.size());
@@ -30,7 +30,7 @@ void NJLaser::onTraverse()
       pub_twist_.publish(twist);
       if (isGoalReached())
       {
-        result_.final_state = lama_interfaces::NavigateResult::DONE;
+        result_.final_state = lama_jockeys::NavigateResult::DONE;
         result_.completion_time = ros::Time::now() - getStartTime() - getInterruptionsDuration();
         server_.setSucceeded(result_);
         laserHandler_.shutdown();
@@ -52,7 +52,7 @@ void NJLaser::onTraverse()
 void NJLaser::onStop()
 {
   laserHandler_.shutdown();
-  result_.final_state = lama_interfaces::NavigateResult::DONE;
+  result_.final_state = lama_jockeys::NavigateResult::DONE;
   result_.completion_time = ros::Duration(0.0);
   server_.setSucceeded(result_);
 }

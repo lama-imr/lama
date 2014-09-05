@@ -4,7 +4,7 @@ namespace lama {
 namespace lj_laser {
 
 LJLaser::LJLaser(std::string name, const double frontier_width, const double max_frontier_angle) :
-  lama::interfaces::LocalizingJockey(name),
+  lama::LocalizingJockey(name),
   scan_received_(false),
   crossing_detector_(frontier_width, max_frontier_angle)
 {
@@ -79,28 +79,28 @@ void LJLaser::onGetVertexDescriptor()
   ros::service::call("vector_double_setter", ds);
   result_.descriptors.push_back(ds.response.id);
   
-  result_.state = lama_interfaces::LocalizeResult::DONE;
+  result_.state = lama_jockeys::LocalizeResult::DONE;
   result_.completion_time = ros::Time::now() - start_time;
   server_.setSucceeded(result_);
 }
 
 void LJLaser::onGetEdgesDescriptors()
 {
-  result_.state = lama_interfaces::LocalizeResult::NOT_SUPPORTED;
+  result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
   result_.completion_time = ros::Duration(0.0);
   server_.setSucceeded(result_);
 }
 
 void LJLaser::onLocalizeInVertex()
 {
-  result_.state = lama_interfaces::LocalizeResult::NOT_SUPPORTED;
+  result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
   result_.completion_time = ros::Duration(0.0);
   server_.setSucceeded(result_);
 }
 
 void LJLaser::onLocalizeEdge()
 {
-  result_.state = lama_interfaces::LocalizeResult::NOT_SUPPORTED;
+  result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
   result_.completion_time = ros::Duration(0.0);
   server_.setSucceeded(result_);
 }
@@ -115,7 +115,7 @@ void LJLaser::onGetSimilarity()
   // Compare them to the current scan by calling one of the pm_??? service.
   // Return what?
   
-  result_.state = lama_interfaces::LocalizeResult::DONE;
+  result_.state = lama_jockeys::LocalizeResult::DONE;
   result_.completion_time = ros::Time::now() - start_time;
   server_.setSucceeded(result_);
 }

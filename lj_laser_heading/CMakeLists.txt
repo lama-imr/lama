@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
 	geometry_msgs
 	lama_common
 	lama_interfaces
+	lama_jockeys
 	lj_laser
 	pm_mcc
 	roscpp
@@ -85,7 +86,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 	INCLUDE_DIRS include
 	# LIBRARIES lj_laser_heading
-	CATKIN_DEPENDS geometry_msgs lama_interfaces lj_laser roscpp sensor_msgs
+	CATKIN_DEPENDS geometry_msgs lama_interfaces lama_jockeys lj_laser roscpp sensor_msgs
 	# DEPENDS system_lib
 )
 

@@ -10,7 +10,7 @@ namespace lj_laser_heading {
 const ros::Duration Jockey::max_data_time_delta_ = ros::Duration(0.050);
 
 Jockey::Jockey(std::string name, const double frontier_width, const double max_frontier_angle) :
-  lama::interfaces::LocalizingJockey(name),
+  lama::LocalizingJockey(name),
   laser_interface_name_(name + "_laser_descriptor"),
   data_received_(false),
   scan_reception_time_(ros::Time(0)),
@@ -133,7 +133,7 @@ void Jockey::onGetVertexDescriptor()
   ros::service::call("vector_double_setter", vangles_setter);
   result_.descriptors.push_back(vangles_setter.response.id);
   
-  result_.state = lama_interfaces::LocalizeResult::DONE;
+  result_.state = lama_jockeys::LocalizeResult::DONE;
   result_.completion_time = ros::Time::now() - start_time;
   server_.setSucceeded(result_);
 }
@@ -169,21 +169,21 @@ void Jockey::rotateScan()
 
 void Jockey::onGetEdgesDescriptors()
 {
-  result_.state = lama_interfaces::LocalizeResult::NOT_SUPPORTED;
+  result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
   result_.completion_time = ros::Duration(0.0);
   server_.setSucceeded(result_);
 }
 
 void Jockey::onLocalizeInVertex()
 {
-  result_.state = lama_interfaces::LocalizeResult::NOT_SUPPORTED;
+  result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
   result_.completion_time = ros::Duration(0.0);
   server_.setSucceeded(result_);
 }
 
 void Jockey::onLocalizeEdge()
 {
-  result_.state = lama_interfaces::LocalizeResult::NOT_SUPPORTED;
+  result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
   result_.completion_time = ros::Duration(0.0);
   server_.setSucceeded(result_);
 }
@@ -241,7 +241,7 @@ void Jockey::onGetSimilarity()
     result_.fdata.push_back(simi_srv.response.raw_similarity);
   }
 
-  result_.state = lama_interfaces::LocalizeResult::DONE;
+  result_.state = lama_jockeys::LocalizeResult::DONE;
   result_.completion_time = ros::Time::now() - start_time;
   server_.setSucceeded(result_);
 }

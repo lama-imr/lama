@@ -15,10 +15,10 @@
 #include <lama_interfaces/ActOnMap.h>
 #include <lama_interfaces/MapAction.h>
 #include <lama_interfaces/AddInterface.h>
-#include <lama_interfaces/localizing_jockey.h>
 #include <lama_interfaces/GetVectorLaserScan.h>
 #include <lama_interfaces/SetVectorLaserScan.h>
 #include <lama_interfaces/SetVectorDouble.h>
+#include <lama_jockeys/localizing_jockey.h>
 #include <polygon_matcher/PolygonSimilarity.h>
 
 #include <lj_laser/crossing_detector.h>
@@ -26,7 +26,7 @@
 namespace lama {
 namespace lj_laser_heading {
 
-class Jockey : public lama::interfaces::LocalizingJockey
+class Jockey : public lama::LocalizingJockey
 {
   public:
 

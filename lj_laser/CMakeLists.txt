@@ -7,6 +7,7 @@ project(lj_laser)
 find_package(catkin REQUIRED COMPONENTS
 	lama_common
 	lama_interfaces
+	lama_jockeys
 	roscpp
 	sensor_msgs
 )

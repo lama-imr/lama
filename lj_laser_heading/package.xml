@@ -45,6 +45,7 @@
   <build_depend>geometry_msgs</build_depend>
   <build_depend>lama_common</build_depend>
   <build_depend>lama_interfaces</build_depend>
+  <build_depend>lama_jockeys</build_depend>
   <build_depend>lj_laser</build_depend>
   <build_depend>pm_mcc</build_depend>
   <build_depend>roscpp</build_depend>
@@ -52,6 +53,7 @@
   <run_depend>geometry_msgs</run_depend>
   <run_depend>lama_common</run_depend>
   <run_depend>lama_interfaces</run_depend>
+  <run_depend>lama_jockeys</run_depend>
   <run_depend>lj_laser</run_depend>
   <run_depend>pm_mcc</run_depend>
   <run_depend>roscpp</run_depend>

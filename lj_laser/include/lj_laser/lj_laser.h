@@ -7,16 +7,16 @@
 #include <sensor_msgs/LaserScan.h>
 
 #include <lama_common/frontier.h>
-#include <lama_interfaces/localizing_jockey.h>
 #include <lama_interfaces/SetVectorLaserScan.h>
 #include <lama_interfaces/SetVectorDouble.h>
+#include <lama_jockeys/localizing_jockey.h>
 
 #include <lj_laser/crossing_detector.h>
 
 namespace lama {
 namespace lj_laser {
 
-class LJLaser : public lama::interfaces::LocalizingJockey
+class LJLaser : public lama::LocalizingJockey
 {
   public:
 

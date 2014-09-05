@@ -6,11 +6,8 @@ project(lama_interfaces)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED
 	COMPONENTS
-	roscpp
 	rospy
 	message_generation
-	actionlib
-	actionlib_msgs
 	geometry_msgs
 	sensor_msgs
 	nav_msgs
@@ -78,12 +75,11 @@ add_service_files(
 )
 
 ## Generate actions in the 'action' folder
-add_action_files(
-  FILES
-  Localize.action
-  Navigate.action
-  Learn.action
-)
+# add_action_files(
+#   FILES
+#   Action1.action
+#   Action2.action
+# )
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
@@ -104,9 +100,9 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-	INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
-	LIBRARIES jockey learning_jockey localizing_jockey navigating_jockey
-	CATKIN_DEPENDS roscpp rospy actionlib actionlib_msgs geometry_msgs sensor_msgs nav_msgs
+	#INCLUDE_DIRS include
+	#LIBRARIES
+	CATKIN_DEPENDS rospy geometry_msgs sensor_msgs nav_msgs
 	DEPENDS python-sqlalchemy
 )
 
@@ -124,10 +120,6 @@ include_directories(
 
 ## Declare a cpp library
 #add_library(lama_core src/lama_core.cpp)
-add_library(jockey src/jockey.cpp)
-add_library(learning_jockey src/learning_jockey.cpp)
-add_library(localizing_jockey src/localizing_jockey.cpp)
-add_library(navigating_jockey src/navigating_jockey.cpp)
 
 ## Declare a cpp executable
 # set(SRC ${SRC} src/lama_interfaces.cpp)
@@ -135,16 +127,10 @@ add_library(navigating_jockey src/navigating_jockey.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(jockey lama_interfaces_generate_messages_cpp)
-add_dependencies(learning_jockey lama_interfaces_generate_messages_cpp)
-add_dependencies(localizing_jockey lama_interfaces_generate_messages_cpp)
-add_dependencies(navigating_jockey lama_interfaces_generate_messages_cpp)
+#add_dependencies(lama_interfaces_node lama_interfaces_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(jockey ${catkin_LIBRARIES})
-target_link_libraries(learning_jockey ${catkin_LIBRARIES})
-target_link_libraries(localizing_jockey ${catkin_LIBRARIES})
-target_link_libraries(navigating_jockey ${catkin_LIBRARIES})
+#target_link_libraries(lama_interfaces_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##
