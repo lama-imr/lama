@@ -5,16 +5,22 @@
 #ifndef _NJ_LASER_CLALOC_H_
 #define _NJ_LASER_CLALOC_H_
 
+#include <math.h>
+#include <algorithm>
+#include <list>
+#include <sstream>
 #include <iostream>
 #include <vector>
-#include <utility>
+#include <utility>  // for std::pair
+
+#include <ros/ros.h>
 
 #include <sensor_msgs/LaserScan.h>
 
 #include <lama_common/frontier.h>
 
 #include <nj_laser/laloc_utils.h>
-#include <nj_laser/cross_detect.h>
+#include <nj_laser/crossing_detector_helper.h>
 
 namespace lama {
 namespace nj_laser {
@@ -29,12 +35,12 @@ typedef enum _SimilarityType {
   NCC_FFT_FROM_SCAN
 } SimilarityType;
 
-class CLaloc
+class CrossingDetector
 {
 	public:
 
-    CLaloc();
-    ~CLaloc();
+    CrossingDetector();
+    ~CrossingDetector();
 
     void setDescriptor(const sensor_msgs::LaserScan& scan);
 

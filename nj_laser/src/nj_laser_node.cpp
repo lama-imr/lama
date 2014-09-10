@@ -9,7 +9,7 @@
 #include <ros/ros.h>
 #include <ros/console.h> // to change the log level to debug
 
-#include <nj_laser/nj_laser.h>
+#include <nj_laser/jockey.h>
 
 int main(int argc, char **argv)
 {
@@ -27,7 +27,7 @@ int main(int argc, char **argv)
   default_jockey_name += "_server";
 	n.param<std::string>("navigating_jockey_server_name", navigating_jockey_name, default_jockey_name);
 
-  lama::nj_laser::NJLaser jockey(navigating_jockey_name);
+  lama::nj_laser::Jockey jockey(navigating_jockey_name);
 
   ROS_INFO("%s started (with server %s)", ros::this_node::getName().c_str(), navigating_jockey_name.c_str());
   ros::spin();

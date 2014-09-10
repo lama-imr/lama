@@ -1,9 +1,9 @@
-#include <nj_laser/nj_laser.h>
+#include <nj_laser/jockey.h>
 
 namespace lama {
 namespace nj_laser {
 
-NJLaser::NJLaser(std::string name) :
+Jockey::Jockey(std::string name) :
   lama::NavigatingJockey(name)
 {
 	pub_crossing_marker_ = nh_.advertise<visualization_msgs::Marker>("crossing_marker", 50, true);
@@ -11,10 +11,10 @@ NJLaser::NJLaser(std::string name) :
   pub_twist_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 }
 
-void NJLaser::onTraverse()
+void Jockey::onTraverse()
 {
   unsetGoalReached();
-  laserHandler_ = nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 1, &NJLaser::handleLaser, this);
+  laserHandler_ = nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 1, &Jockey::handleLaser, this);
   ROS_DEBUG("Laser handler started");
   
   ros::Rate r(50);
@@ -31,7 +31,7 @@ void NJLaser::onTraverse()
       pub_twist_.publish(twist);
       if (isGoalReached())
       {
-        ROS_DEBUG("NJLaser: goal reached");
+        ROS_DEBUG("Jockey: goal reached");
         result_.final_state = lama_jockeys::NavigateResult::DONE;
         result_.completion_time = ros::Time::now() - getStartTime() - getInterruptionsDuration();
         server_.setSucceeded(result_);
@@ -53,7 +53,7 @@ void NJLaser::onTraverse()
   ROS_DEBUG("Exiting onTraverse");
 }
 
-void NJLaser::onStop()
+void Jockey::onStop()
 {
   laserHandler_.shutdown();
   result_.final_state = lama_jockeys::NavigateResult::DONE;
@@ -61,19 +61,19 @@ void NJLaser::onStop()
   server_.setSucceeded(result_);
 }
 
-void NJLaser::onInterrupt()
+void Jockey::onInterrupt()
 {
   onStop();
 }
 
-void NJLaser::onContinue()
+void Jockey::onContinue()
 {
   onTraverse();
 }
 
-void NJLaser::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
+void Jockey::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
 {
-  ROS_DEBUG("NJLaser: laser arrived with %zu beams", msg->ranges.size());
+  ROS_DEBUG("Jockey: laser arrived with %zu beams", msg->ranges.size());
 
   cross_detector.crossDetect(*msg);
   std::vector<double> desc = cross_detector.getCrossDescriptor();

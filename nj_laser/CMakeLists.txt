@@ -110,11 +110,11 @@ include_directories(
 # add_library(nj_laser)
 
 ## Declare a cpp executable
-set(SRC ${SRC} src/nj_laser.cpp)
+set(SRC ${SRC} src/jockey.cpp)
 set(SRC ${SRC} src/visualization.cpp)
-set(SRC ${SRC} src/claloc.cpp)
 set(SRC ${SRC} src/laloc_utils.cpp)
-set(SRC ${SRC} src/cross_detect.cpp)
+set(SRC ${SRC} src/crossing_detector.cpp)
+set(SRC ${SRC} src/crossing_detector_helper.cpp)
 set(SRC ${SRC} src/voronoi.cpp)
 set(SRC ${SRC} src/shape_sim.cpp)
 add_executable(nj_laser src/nj_laser_node.cpp ${SRC})

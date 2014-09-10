@@ -1,13 +1,4 @@
-#include <math.h>
-#include <algorithm>
-#include <list>
-#include <sstream>
-
-#include <ros/ros.h>
-
-#include <nj_laser/claloc.h>
-#include <nj_laser/hist.h>
-#include <nj_laser/cross_detect.h>
+#include <nj_laser/crossing_detector.h>
 
 namespace lama {
 namespace nj_laser {
@@ -18,8 +9,8 @@ using std::cerr;
 using std::pair;
 using std::stringstream;
 
-const double CLaloc::frontier_width = 0.7;
-const int CLaloc::descriptorFFTSize = 50;
+const double CrossingDetector::frontier_width = 0.7;
+const int CrossingDetector::descriptorFFTSize = 50;
 
 const char* similarityMethodName[] = {
   "NCC_FFT",
@@ -54,7 +45,7 @@ const char* similarityMethodName[] = {
   */ 
 
 
-CLaloc::CLaloc()
+CrossingDetector::CrossingDetector()
 {
   //	similarityType = NCC_FFT;
   similarityType = NCC_FFT_FROM_SCAN;
@@ -66,22 +57,22 @@ CLaloc::CLaloc()
   //beamResolution =0.00436;//0.25*M_PI/180.0;
   beamResolution = 0.25 * M_PI / 180.0;
 
-  ROS_INFO("CLaloc: chosen similarity method is %s", similarityMethodName[similarityType]);
-  ROS_INFO("CLaloc: descriptor size = %i", descriptorFFTSize);
-  ROS_INFO("CLaloc: distance threshold frontier_width=%f", frontier_width);
+  ROS_INFO("CrossingDetector: chosen similarity method is %s", similarityMethodName[similarityType]);
+  ROS_INFO("CrossingDetector: descriptor size = %i", descriptorFFTSize);
+  ROS_INFO("CrossingDetector: distance threshold frontier_width=%f", frontier_width);
 
-  ROS_INFO("CLaloc: beamAngleSize = %f", beamAngleSize);
-  ROS_INFO("CLaloc: beamOffset = %f", beamOffset);
-  ROS_INFO("CLaloc: beamResolution = %f", beamResolution);
+  ROS_INFO("CrossingDetector: beamAngleSize = %f", beamAngleSize);
+  ROS_INFO("CrossingDetector: beamOffset = %f", beamOffset);
+  ROS_INFO("CrossingDetector: beamResolution = %f", beamResolution);
 }
 
-CLaloc::~CLaloc()
+CrossingDetector::~CrossingDetector()
 {
   actDescriptor.clear();
   actCrossdescriptor.clear();
 }
 
-void CLaloc::setDescriptor(const sensor_msgs::LaserScan& scan)
+void CrossingDetector::setDescriptor(const sensor_msgs::LaserScan& scan)
 {
   crossDetect(scan);
   actDescriptor.clear();
@@ -92,12 +83,12 @@ void CLaloc::setDescriptor(const sensor_msgs::LaserScan& scan)
 
 
 
-const vector<double>& CLaloc::getDescriptor() const
+const vector<double>& CrossingDetector::getDescriptor() const
 {
   return actDescriptor;
 }
 
-const vector<double>& CLaloc::getCrossDescriptor() const
+const vector<double>& CrossingDetector::getCrossDescriptor() const
 {
   return actCrossdescriptor;
 }
@@ -109,7 +100,7 @@ const vector<double>& CLaloc::getCrossDescriptor() const
  * @return data part of a vertex 
  * see comment above for description of data in vertex
  */
-vector<double> CLaloc::getDataFromVertex(const vector<double> &vertex) const
+vector<double> CrossingDetector::getDataFromVertex(const vector<double> &vertex) const
 {
   if (vertex.size() < 5)
   {
@@ -124,7 +115,7 @@ vector<double> CLaloc::getDataFromVertex(const vector<double> &vertex) const
  * minPhi angle of the first laser point in radian
  * maxPhi angle of the last laser point in radian
  */
-void CLaloc::crossDetect(const sensor_msgs::LaserScan& scan)
+void CrossingDetector::crossDetect(const sensor_msgs::LaserScan& scan)
 { 
   const double minPhi = scan.angle_min;
   const double maxPhi = scan.angle_max;
@@ -138,25 +129,6 @@ void CLaloc::crossDetect(const sensor_msgs::LaserScan& scan)
 
 
   double maxRange = *std::max_element(ranges.begin(), ranges.end());
-  // t1 = ros::Time::now();
-  // CHist hist(0, maxRange, maxRange / 30);
-  // hist.add(scan);
-
-  // std::vector<int> v = hist.getHist();
-  // std::ostringstream s;
-  // s << "hist:";
-  // for(std::vector<int>::iterator it = v.begin(); it != v.end(); ++it)
-  // {
-  // 	s << *it << ",";
-  // }
-  // ROS_INFO("%s", s.str().c_str());
-
-  //  rtOpt is the range value where the most range values are. In mostly free
-  //  space, this corresponds to the max. laser range.
-  // double rtOpt = 0.95 * hist.getRangeLo(hist.getMaxBin());
-
-  // t2 = ros::Time::now();
-  // ROS_INFO("time of making histogram: %f s, rtOpt: %f, maxrange: %f", t2 - t1, rtOpt, maxRange);
   double rtOpt = 0.9 * maxRange;
 
   vector<Frontier> frontiers;
@@ -206,33 +178,33 @@ void CLaloc::crossDetect(const sensor_msgs::LaserScan& scan)
   actCrossdescriptor = res;
 }
 
-double CLaloc::getCrossCenterX() const
+double CrossingDetector::getCrossCenterX() const
 {
   if (actCrossdescriptor.size() > 0)
     return actCrossdescriptor[0];
   return 0;
 }
 
-double CLaloc::getCrossCenterY() const
+double CrossingDetector::getCrossCenterY() const
 {
   if (actCrossdescriptor.size() > 1)
     return actCrossdescriptor[1];
   return 0;
 }
 
-double CLaloc::getCrossRadius() const
+double CrossingDetector::getCrossRadius() const
 {
   if (actCrossdescriptor.size() > 2)
     return actCrossdescriptor[2];
   return 0;
 }
 
-int CLaloc::getNumExits() const
+int CrossingDetector::getNumExits() const
 {
   return std::max(0, (int)(actCrossdescriptor.size() - 3));
 }
 
-std::vector<double> CLaloc::getExitAngles() const
+std::vector<double> CrossingDetector::getExitAngles() const
 {
 	std::vector<double> exitAngles;
 	for (size_t i = 3; i < actCrossdescriptor.size(); ++i)
@@ -242,7 +214,7 @@ std::vector<double> CLaloc::getExitAngles() const
 	return exitAngles;
 }
 
-double CLaloc::getExitAngle(const int i) const
+double CrossingDetector::getExitAngle(const int i) const
 {
   if (i >=0 && i < actFrontiers.size())
   {
@@ -251,7 +223,7 @@ double CLaloc::getExitAngle(const int i) const
   return 0;
 }
 
-double CLaloc::getExitWidth(const int i) const
+double CrossingDetector::getExitWidth(const int i) const
 {
   if (i >= 0 && i < actFrontiers.size())
   {
@@ -260,7 +232,7 @@ double CLaloc::getExitWidth(const int i) const
   return -1;
 }
 
-int CLaloc::getDescriptorFFTSize() const
+int CrossingDetector::getDescriptorFFTSize() const
 {
   return descriptorFFTSize;
 }
@@ -271,7 +243,7 @@ int CLaloc::getDescriptorFFTSize() const
  * see comment in begging of this file with description of data format
  */
 
-std::string CLaloc::getLocalizeMessage(const double xpos, const double ypos) const
+std::string CrossingDetector::getLocalizeMessage(const double xpos, const double ypos) const
 {
   /*
      char tmp[200];
@@ -309,7 +281,7 @@ std::string CLaloc::getLocalizeMessage(const double xpos, const double ypos) con
   return ss.str();
 }
 
-std::string CLaloc::getInitMessage() const
+std::string CrossingDetector::getInitMessage() const
 {
   stringstream ss;
   ss <<  "<LOCALIZING>\n";
@@ -319,13 +291,13 @@ std::string CLaloc::getInitMessage() const
   return ss.str();
 }
 
-std::string CLaloc::getFinishMessage() const
+std::string CrossingDetector::getFinishMessage() const
 {
   std::string tmp = "</LOCALIZING>";
   return tmp;
 }
 
-std::string CLaloc::getLocalizedMessage(const double prob, const double shift ) const
+std::string CrossingDetector::getLocalizedMessage(const double prob, const double shift ) const
 {
   stringstream ss;
 
@@ -347,7 +319,7 @@ std::string CLaloc::getLocalizedMessage(const double prob, const double shift ) 
 
 /** for each detected edge (exit from a cross) send 
  * one edge */
-std::string CLaloc::getEdgesMessage() const
+std::string CrossingDetector::getEdgesMessage() const
 {
   stringstream ss;
 
@@ -361,51 +333,51 @@ std::string CLaloc::getEdgesMessage() const
 
 }
 
-void CLaloc::setMaxPhi(const double phi)
+void CrossingDetector::setMaxPhi(const double phi)
 {
   maxScanPhi = phi;
 }	
 
-double CLaloc::getMaxPhi(const double phi) const
+double CrossingDetector::getMaxPhi(const double phi) const
 {
   return maxScanPhi;
 }
 
-double CLaloc::getBeamAngleSize() const
+double CrossingDetector::getBeamAngleSize() const
 {
   return beamAngleSize;
 }
 
-double CLaloc::getBeamOffset() const
+double CrossingDetector::getBeamOffset() const
 {
   return beamOffset;
 }
 
-double CLaloc::getBeamResolution() const
+double CrossingDetector::getBeamResolution() const
 {
   return beamResolution;
 }
 
-void CLaloc::setBeamAngleSize(const double size)
+void CrossingDetector::setBeamAngleSize(const double size)
 {
   beamAngleSize = size;
-  ROS_INFO("CLaloc: beamAngleSize set to %f" ,size);
+  ROS_INFO("CrossingDetector: beamAngleSize set to %f" ,size);
 }
 
 
-void CLaloc::setBeamOffset(const double offset)
+void CrossingDetector::setBeamOffset(const double offset)
 {
   beamOffset = offset;
-  ROS_INFO("CLaloc: beamOffset set to %f" ,offset);
+  ROS_INFO("CrossingDetector: beamOffset set to %f" ,offset);
 }
 
-void CLaloc::setBeamResolution(const double resolution)
+void CrossingDetector::setBeamResolution(const double resolution)
 {
   beamResolution = resolution;
-  ROS_INFO("CLaloc: beamResolution set to %f " , resolution);
+  ROS_INFO("CrossingDetector: beamResolution set to %f " , resolution);
 }
 
-int CLaloc::getDescriptorSize() const
+int CrossingDetector::getDescriptorSize() const
 {
   return actDescriptor.size();
 }

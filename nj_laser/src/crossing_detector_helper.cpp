@@ -7,7 +7,7 @@
 
 #include <ros/ros.h>
 
-#include <nj_laser/cross_detect.h>
+#include <nj_laser/crossing_detector_helper.h>
 #include <nj_laser/laloc_utils.h>
 #include <nj_laser/voronoi.h>
 #include <nj_laser/polygon_utils.h>
