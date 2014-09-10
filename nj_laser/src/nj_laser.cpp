@@ -3,7 +3,8 @@
 namespace lama {
 namespace nj_laser {
 
-NJLaser::NJLaser(std::string name) : lama::NavigatingJockey(name)
+NJLaser::NJLaser(std::string name) :
+  lama::NavigatingJockey(name)
 {
 	pub_crossing_marker_ = nh_.advertise<visualization_msgs::Marker>("crossing_marker", 50, true);
   pub_exits_marker_ = nh_.advertise<visualization_msgs::Marker> ("exits_marker", 50, true);
@@ -30,6 +31,7 @@ void NJLaser::onTraverse()
       pub_twist_.publish(twist);
       if (isGoalReached())
       {
+        ROS_DEBUG("NJLaser: goal reached");
         result_.final_state = lama_jockeys::NavigateResult::DONE;
         result_.completion_time = ros::Time::now() - getStartTime() - getInterruptionsDuration();
         server_.setSucceeded(result_);
@@ -45,8 +47,10 @@ void NJLaser::onTraverse()
       geometry_msgs::Twist twist = goToGoal(goal);
       pub_twist_.publish(twist);
     }
+    ros::spinOnce();
     r.sleep();
   }
+  ROS_DEBUG("Exiting onTraverse");
 }
 
 void NJLaser::onStop()
@@ -67,18 +71,18 @@ void NJLaser::onContinue()
   onTraverse();
 }
 
-void NJLaser::handleLaser(const sensor_msgs::LaserScan msg)
+void NJLaser::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
 {
-  ROS_DEBUG("NJLaser: laser arrived with %zu beams", msg.ranges.size());
+  ROS_DEBUG("NJLaser: laser arrived with %zu beams", msg->ranges.size());
 
-  cross_detector.crossDetect(msg);
+  cross_detector.crossDetect(*msg);
   std::vector<double> desc = cross_detector.getCrossDescriptor();
   ROS_DEBUG("Crossing x: %.3f, y: %.3f, r: %.3f, nroads: %zu", desc[0], desc[1], desc[2], desc.size() - 3);
 
   // Visualization: a sphere at detected crossing center
 	if (pub_crossing_marker_.getNumSubscribers())
 	{
-		visualization_msgs::Marker m = crossingMarker(msg.header.frame_id,
+		visualization_msgs::Marker m = crossingMarker(msg->header.frame_id,
 				cross_detector.getCrossCenterX(), cross_detector.getCrossCenterY(), cross_detector.getCrossRadius());
 		pub_crossing_marker_.publish(m);
 	}
@@ -88,7 +92,7 @@ void NJLaser::handleLaser(const sensor_msgs::LaserScan msg)
 	if (pub_exits_marker_.getNumSubscribers())
 	{
 		std::vector<double> exitAngles = cross_detector.getExitAngles();
-		visualization_msgs::Marker m = exitsMarker(msg.header.frame_id, exitAngles, cross_detector.getCrossRadius());
+		visualization_msgs::Marker m = exitsMarker(msg->header.frame_id, exitAngles, cross_detector.getCrossRadius());
 		pub_exits_marker_.publish(m);
 	}
 }

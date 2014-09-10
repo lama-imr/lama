@@ -39,9 +39,9 @@ class NJLaser : public lama::NavigatingJockey
     virtual void onInterrupt();
     virtual void onContinue();
 
-  private:
+    void handleLaser(const sensor_msgs::LaserScanConstPtr& msg);
 
-    void handleLaser(const sensor_msgs::LaserScan msg);
+  private:
 
     ros::Subscriber laserHandler_;
     ros::Publisher pub_crossing_marker_;

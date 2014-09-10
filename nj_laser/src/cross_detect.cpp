@@ -93,6 +93,12 @@ void cdPanoramatic3(
     const double minPhi, const double maxPhi, const double maxFrontierAngle,
     vector<Frontier> &frontiers)
 {
+  if (scan.size() < 2)
+  {
+    std::cerr << __FUNCTION__ << " laser scan must have at least 2 points\n";
+    return;
+  }
+
   vector<double> filtScan;
   vector<int> angleNumber;
 
@@ -112,12 +118,6 @@ void cdPanoramatic3(
   if (filtScan.size() == 0)
   {
     std::cerr << __FUNCTION__ << " all points from scan are above threshold\n";
-    return;
-  }
-
-  if (scan.size() < 2)
-  {
-    std::cerr << __FUNCTION__ << " laser scan must have at least 2 points\n";
     return;
   }
 
