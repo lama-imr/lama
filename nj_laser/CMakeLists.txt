@@ -5,13 +5,14 @@ project(nj_laser)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-	roscpp
-	std_msgs
 	geometry_msgs
-	sensor_msgs
-	visualization_msgs
 	lama_common
 	lama_jockeys
+	lama_msgs
+	roscpp
+	std_msgs
+	sensor_msgs
+	visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -87,15 +88,13 @@ find_package(ANN REQUIRED)
 catkin_package(
 	INCLUDE_DIRS include
 	# LIBRARIES ${PROJECT_NAME}
-	CATKIN_DEPENDS ann roscpp std_msgs geometry_msgs sensor_msgs visualization_msgs lama_common lama_jockeys
+	CATKIN_DEPENDS ann geometry_msgs lama_common lama_jockeys lama_msgs roscpp std_msgs sensor_msgs visualization_msgs
 	# DEPENDS system_lib
 )
 
 ###########
 ## Build ##
 ###########
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -121,7 +120,7 @@ add_executable(nj_laser src/nj_laser_node.cpp ${SRC})
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(nj_laser lama_jockeys)
+#add_dependencies(nj_laser lama_jockeys)
 #add_dependencies(${PROJECT_NAME} nj_laser_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against

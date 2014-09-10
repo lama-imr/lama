@@ -10,7 +10,7 @@ namespace nj_laser {
 
 visualization_msgs::Marker crossingMarker(const std::string& frame_id, const double x, const double y, const double radius);
 
-visualization_msgs::Marker exitsMarker(const std::string& frame_id, const std::vector<double>& angles, const double length);
+visualization_msgs::Marker exitsMarker(const std::string& frame_id, const double x, const double y, const std::vector<double>& angles, const double length);
 
 } // namespace nj_laser
 } // namespace lama

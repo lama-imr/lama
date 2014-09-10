@@ -28,8 +28,6 @@ void saveScan(const char *filename, const vector<Point2> &pts);
 
 void saveDoubles(const char *filename, const vector<double> &values);
 
-int getAngleShiftFFT(const vector<double> &fft1, const vector<double> &ftd2);
-
 } // namespace nj_laser
 } // namespace lama
 

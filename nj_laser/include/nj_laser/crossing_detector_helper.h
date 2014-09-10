@@ -1,10 +1,13 @@
-#ifndef _NJ_LASER_CROSSDETECT_H_
-#define _NJ_LASER_CROSSDETECT_H_
+#ifndef _NJ_LASER_CROSSING_DETECTOR_HELPER_H_
+#define _NJ_LASER_CROSSING_DETECTOR_HELPER_H_
 
 #include <vector>
 
+#include <sensor_msgs/LaserScan.h>
+
 #include <lama_common/point.h>
-#include <lama_common/frontier.h>
+#include <lama_msgs/Frontier.h>
+
 #include <nj_laser/shape_sim.h>
 #include <nj_laser/laloc_utils.h>
 
@@ -18,14 +21,14 @@ namespace nj_laser {
 
 using std::vector;
 using lama::Point2;
-using lama::Frontier;
+using sensor_msgs::LaserScan;
+using lama_msgs::Frontier;
 
 /** @brief cross detection with frontiers.
   */
-void cdPanoramatic3(
-    const std::vector<double> &scan, const double rt, const double dt,
-    const double minPhi, const double fov, const double maxFrontierAngle,
-    std::vector<Frontier> &frontiers);
+void cdPanoramatic3(const LaserScan& scan,
+    const double rt, const double dt, const double maxFrontierAngle,
+    vector<Frontier> &frontiers);
 
 /** @brief return center of a cross by finding largest circle. works fine
   */
@@ -39,6 +42,6 @@ void getCrossCenterVoronoiWithKDTree(
 } // namespace nj_laser
 } // namespace lama
 
-#endif // _NJ_LASER_CROSSDETECT_H_
+#endif // _NJ_LASER_CROSSING_DETECTOR_HELPER_H_
 
 

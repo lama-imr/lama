@@ -76,7 +76,7 @@ struct SCircle
     x(xx),y(yy),r(rr) {}
 };	
 
-/* return frontiers and angles to it
+/* return frontiers
  *
  * scan laser ranges
  * rt max range for a laser beam to be considered
@@ -88,14 +88,13 @@ struct SCircle
  *                  90 deg).
  * frontiers returned frontiers
  */
-void cdPanoramatic3(
-    const vector<double> &scan, const double rt, const double dt,
-    const double minPhi, const double maxPhi, const double maxFrontierAngle,
+void cdPanoramatic3(const LaserScan& scan,
+    const double rt, const double dt, const double maxFrontierAngle,
     vector<Frontier> &frontiers)
 {
-  if (scan.size() < 2)
+  if (scan.ranges.size() < 2)
   {
-    std::cerr << __FUNCTION__ << " laser scan must have at least 2 points\n";
+    ROS_ERROR("cdPanoramatic3: laser scan must have at least 2 points");
     return;
   }
 
@@ -103,13 +102,13 @@ void cdPanoramatic3(
   vector<int> angleNumber;
 
   // Filter out laser beams longer than rt
-  filtScan.reserve(scan.size());
-  angleNumber.reserve(scan.size());
-  for(int i = 0; i < scan.size(); i++)
+  filtScan.reserve(scan.ranges.size());
+  angleNumber.reserve(scan.ranges.size());
+  for(int i = 0; i < scan.ranges.size(); i++)
   {
-    if (scan[i] < rt)
+    if (scan.ranges[i] < rt)
     {
-      filtScan.push_back(scan[i]);
+      filtScan.push_back(scan.ranges[i]);
       angleNumber.push_back(i);
     }
   }
@@ -121,12 +120,12 @@ void cdPanoramatic3(
     return;
   }
 
-  double phiResolution = (maxPhi - minPhi) / (scan.size() - 1);
+  double phiResolution = scan.angle_increment;
   double aAngle, bAngle;
   Point2 a, b;
   aAngle = angleNumber[0] * phiResolution;
-  a.x = filtScan[0] * cos(minPhi + aAngle);
-  a.y = filtScan[0] * sin(minPhi + aAngle);
+  a.x = filtScan[0] * cos(scan.angle_min + aAngle);
+  a.y = filtScan[0] * sin(scan.angle_min + aAngle);
 
   double dist;
   frontiers.clear();
@@ -135,8 +134,8 @@ void cdPanoramatic3(
   {
     int j = i % filtScan.size();
     bAngle = angleNumber[j] * phiResolution;
-    b.x = filtScan[j] * cos(minPhi + bAngle);
-    b.y = filtScan[j] * sin(minPhi + bAngle);
+    b.x = filtScan[j] * cos(scan.angle_min + bAngle);
+    b.y = filtScan[j] * sin(scan.angle_min + bAngle);
     dist = (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
 
     if (dist > dt*dt)
@@ -149,7 +148,14 @@ void cdPanoramatic3(
       double frontierAngleWithSxSy = acos(dotProductFrontierSxSy / dist / distToFrontierCenter);
       if (fabs(M_PI_2 - frontierAngleWithSxSy) < maxFrontierAngle) //TODO: was fabs(aAngle-bAngle) > maxFrontierAngle)
       {
-        frontiers.push_back(Frontier(a, b, sqrt(dist), atan2(sy, sx)));
+        Frontier frontier;
+        frontier.p1.x = a.x;
+        frontier.p1.y = a.y;
+        frontier.p2.x = b.x;
+        frontier.p2.y = b.y;
+        frontier.width = std::sqrt(dist);
+        frontier.angle = std::atan2(sy, sx);
+        frontiers.push_back(frontier);
       }
     }
     a.x = b.x;
@@ -373,13 +379,8 @@ void filterVoronoiEdges(vector<VDEdge>& edges, const vector<PT>& pts)
   }
 
   bool far;
-  int from,to;
 
-  const int pSize = pts.size();
-  const int eSize = edges.size();
-
-
-  for (int u = 0; u < eSize; u++)
+  for (size_t u = 0; u < edges.size(); u++)
   {
     const double x1 = edges[u].x1;
     const double y1 = edges[u].y1;
@@ -443,7 +444,8 @@ bool getMinMaxValues(const vector<PT> &pts, double &minx, double &maxx,
 
   const int size = pts.size();
 
-  if (size == 0) {
+  if (size == 0)
+  {
     return false;
   }
 
@@ -453,7 +455,9 @@ bool getMinMaxValues(const vector<PT> &pts, double &minx, double &maxx,
   maxy = miny;
 
   int i=0;
-  if (size & 1 == 1) {
+  if ((size & 1) == 1)
+  {
+    // If size is odd.
     i = 1;
   }
 
@@ -555,16 +559,16 @@ vector<CenterC> getFreeSpace(const vector<VDEdge> edges, const vector<voronoi::P
   // allowing to improve the comparison by computing each node only once.
   freeSpace_dict freeSpace_d;
   unsigned int ann_count = 0;
-  for(auto edge : edges)
+  for (vector<VDEdge>::const_iterator it = edges.begin(); it != edges.end(); ++it)
   {
     uint32_t codedPoint;
-    encodePoint(edge.x1, edge.y1, codedPoint);
+    encodePoint(it->x1, it->y1, codedPoint);
     freeSpace_dict::const_iterator search = freeSpace_d.find(codedPoint);
     if (search == freeSpace_d.end())
     {
       // Point was not yet calculated.
-      query[0] = edge.x1;
-      query[1] = edge.y1;
+      query[0] = it->x1;
+      query[1] = it->y1;
       // TODO: test eps value (last parameter of annkSearch)
       // TODO: try tree->annkFRSearch (same as annkSearch with max. radius)
       tree->annkSearch(query, k, idx, dist, 0.01);
@@ -574,12 +578,12 @@ vector<CenterC> getFreeSpace(const vector<VDEdge> edges, const vector<voronoi::P
         freeSpace_d[codedPoint] = dist[0];
       }
     }
-    encodePoint(edge.x2, edge.y2, codedPoint);
+    encodePoint(it->x2, it->y2, codedPoint);
     search = freeSpace_d.find(codedPoint);
     if (search == freeSpace_d.end())
     {
-      query[0] = edge.x2;
-      query[1] = edge.y2;
+      query[0] = it->x2;
+      query[1] = it->y2;
       tree->annkSearch(query, k, idx, dist, 0);
       ann_count++;
       if (dist[0] > 0)
@@ -592,11 +596,11 @@ vector<CenterC> getFreeSpace(const vector<VDEdge> edges, const vector<voronoi::P
 
   vector<CenterC> freeSpace;
   freeSpace.reserve(freeSpace_d.size());
-  for (auto pair : freeSpace_d)
+  for (freeSpace_dict::const_iterator it = freeSpace_d.begin(); it != freeSpace_d.end(); ++it)
   {
     double x, y;
-    decodePoint(pair.first, x, y);
-    freeSpace.push_back(CenterC(x, y, pair.second));
+    decodePoint(it->first, x, y);
+    freeSpace.push_back(CenterC(x, y, it->second));
   }
   ROS_DEBUG("Number of crossing center candidates: %lu", freeSpace.size());
 

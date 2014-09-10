@@ -92,7 +92,9 @@ void Jockey::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
 	if (pub_exits_marker_.getNumSubscribers())
 	{
 		std::vector<double> exitAngles = cross_detector.getExitAngles();
-		visualization_msgs::Marker m = exitsMarker(msg->header.frame_id, exitAngles, cross_detector.getCrossRadius());
+		visualization_msgs::Marker m = exitsMarker(msg->header.frame_id,
+        cross_detector.getCrossCenterX(), cross_detector.getCrossCenterY(),
+        exitAngles, cross_detector.getCrossRadius());
 		pub_exits_marker_.publish(m);
 	}
 }
