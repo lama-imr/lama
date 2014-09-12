@@ -27,6 +27,7 @@ void LJLaser::getLaserScan()
       scan_received_ = false;
       break;
     }
+    ros::spinOnce();
     r.sleep();
   }
 }

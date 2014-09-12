@@ -100,11 +100,12 @@ bool CrossingDetector::frontiers(const sensor_msgs::LaserScan& scan, vector<Fron
   double phiResolution = scan.angle_increment;
   double aAngle;
   double bAngle;
-  Point2 a;
-  Point2 b;
-  aAngle = angleNumber[0] * phiResolution;
-  a.x = filtScan[0] * std::cos(scan.angle_min + aAngle);
-  a.y = filtScan[0] * std::sin(scan.angle_min + aAngle);
+  geometry_msgs::Point a;
+  geometry_msgs::Point b;
+  aAngle = scan.angle_min + angleNumber[0] * phiResolution;
+  a.x = filtScan[0] * std::cos(aAngle);
+  a.y = filtScan[0] * std::sin(aAngle);
+  Frontier frontier;
 
   double dist2;
   double dt2 = frontier_width_ * frontier_width_;
@@ -113,9 +114,9 @@ bool CrossingDetector::frontiers(const sensor_msgs::LaserScan& scan, vector<Fron
   for(size_t i = 1; i < filtScan.size() + 1; i++)
   {
     const size_t j = i % filtScan.size();
-    bAngle = angleNumber[j] * phiResolution;
-    b.x = filtScan[j] * std::cos(scan.angle_min + bAngle);
-    b.y = filtScan[j] * std::sin(scan.angle_min + bAngle);
+    bAngle = scan.angle_min + angleNumber[j] * phiResolution;
+    b.x = filtScan[j] * std::cos(bAngle);
+    b.y = filtScan[j] * std::sin(bAngle);
     dist2 = (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
 
     if (dist2 > dt2)
@@ -125,10 +126,15 @@ bool CrossingDetector::frontiers(const sensor_msgs::LaserScan& scan, vector<Fron
 
       double distToFrontierCenter = std::sqrt(sx * sx + sy * sy);
       double dotProductFrontierSxSy = (b.x - a.x) * sx + (b.y - a.y) * sy;
-      double frontierAngleWithSxSy = std::acos(dotProductFrontierSxSy / dist2 / distToFrontierCenter);
+      double dist = std::sqrt(dist2);
+      double frontierAngleWithSxSy = std::acos(dotProductFrontierSxSy / dist / distToFrontierCenter);
       if (std::fabs(M_PI_2 - frontierAngleWithSxSy) < max_frontier_angle_)
       {
-        frontiers.push_back(Frontier(a, b, std::sqrt(dist2), std::atan2(sy, sx)));
+        frontier.p1 = a;
+        frontier.p2 = b;
+        frontier.width = dist;
+        frontier.angle = std::atan2(sy, sx);
+        frontiers.push_back(frontier);
       }
     }
     a.x = b.x;

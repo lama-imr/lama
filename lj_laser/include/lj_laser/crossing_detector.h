@@ -11,10 +11,11 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
+#include <geometry_msgs/Point.h>
 
 #include <lama_common/point.h>
-#include <lama_common/frontier.h>
 #include <lama_common/polygon.h>
+#include <lama_msgs/Frontier.h>
 
 namespace lama {
 namespace lj_laser {
@@ -26,8 +27,7 @@ typedef Delaunay::Vertex Vertex;
 typedef K::Point_2 Point;
 
 using std::vector;
-using lama::Point2;
-using lama::Frontier;
+using lama_msgs::Frontier;
 
 class CrossingDetector
 {
