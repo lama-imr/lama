@@ -31,5 +31,6 @@ int main(int argc, char **argv)
 
   ROS_INFO("%s started (with server %s)", ros::this_node::getName().c_str(), navigating_jockey_name.c_str());
   ros::spin();
+  return 0;
 }
 
