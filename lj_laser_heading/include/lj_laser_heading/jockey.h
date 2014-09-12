@@ -1,4 +1,27 @@
-/* Action server for lj_laser_heading node.
+/*
+ * Localizing jockey based on LaserScan associated with
+ * absolute heading.
+ *
+ * The role of this jockey is to get the similarity of the LaserScan
+ * descriptors of all vertices with the current LaserScan.
+ * The action is done when the similarities are computed.
+ *
+ * Interaction with the map (created by this jockey):
+ * - Getter/Setter: VectorLaserScan, jockey_name + "_laser_descriptor"
+ * - Setter: SetVectorDouble, TO BE DELETED
+ * - Setter: Crossing, jockey_name + "_crossing_descriptor"
+ *
+ * Interaction with the map (created by other jockeys):
+ * - none
+ *
+ * Subscribers (other than map-related):
+ * - sensor_msg::LaserScan, "~/base_scan", 360-deg laser-scan.
+ * - geometry_msgs::Pose, "~/pose"
+ *
+ * Publishers (other than map-related):
+ * - 
+ * Services used (other than map-related):
+ * - polygon_matcher::PolygonSimilarity, "~/similarity_server"
  */
 
 #ifndef _LJ_LASER_HEADING_JOCKEY_H_
@@ -11,13 +34,14 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Quaternion.h>
 
-#include <lama_common/frontier.h>
 #include <lama_interfaces/ActOnMap.h>
 #include <lama_interfaces/MapAction.h>
 #include <lama_interfaces/AddInterface.h>
 #include <lama_interfaces/GetVectorLaserScan.h>
 #include <lama_interfaces/SetVectorLaserScan.h>
 #include <lama_interfaces/SetVectorDouble.h>
+#include <lama_msgs/Frontier.h>
+#include <lama_msgs/SetCrossing.h>
 #include <lama_jockeys/localizing_jockey.h>
 #include <polygon_matcher/PolygonSimilarity.h>
 
@@ -44,23 +68,32 @@ class Jockey : public lama::LocalizingJockey
 
   private:
 
+    void initMapLaserInterface();
+    void initMapCrossingInterface();
     void getData();
     void handleLaser(const sensor_msgs::LaserScan msg);
     void handlePose(const geometry_msgs::Pose msg);
 
     void rotateScan();
 
-    // Reception and storage of LaserScan and Pose.
-    std::string laser_interface_name_;
+    // Reception and storage of LaserScan, Pose and Crossing.
     ros::Subscriber laserHandler_;
-    ros::ServiceClient laser_descriptor_getter_;
     ros::Subscriber poseHandler_;
     bool data_received_;
     ros::Time scan_reception_time_;
     ros::Time pose_reception_time_;
-    const static ros::Duration max_data_time_delta_;  //!> Max time interval between reception of scan_ and pose_.
     sensor_msgs::LaserScan scan_;
     geometry_msgs::Pose pose_;  //!> Only the heading information will be used.
+
+    // Reception and Sending of LaserScan and Crossing descriptors.
+    std::string laser_interface_name_;
+    ros::ServiceClient laser_descriptor_getter_;
+    ros::ServiceClient laser_descriptor_setter_;
+    std::string crossing_interface_name_;
+    ros::ServiceClient crossing_descriptor_setter_;
+
+    // Hard-coded parameters.
+    const static ros::Duration max_data_time_delta_;  //!> Max time interval between reception of scan_ and pose_.
 
     // Similarity server.
     std::string similarity_server_name_;

@@ -1,9 +1,3 @@
-/**
- * Localizing jockey based on LaserScan associated with
- * absolute heading.
- *
- */
-
 #include <string>
 
 #include <ros/ros.h>
