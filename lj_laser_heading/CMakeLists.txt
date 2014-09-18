@@ -5,6 +5,7 @@ project(lj_laser_heading)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+	crossing_detector
 	geometry_msgs
 	lama_common
 	lama_interfaces
@@ -86,7 +87,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 	INCLUDE_DIRS include
 	# LIBRARIES lj_laser_heading
-	CATKIN_DEPENDS geometry_msgs lama_interfaces lama_jockeys lj_laser roscpp sensor_msgs
+	CATKIN_DEPENDS crossing_detector geometry_msgs lama_interfaces lama_jockeys lj_laser roscpp sensor_msgs
 	# DEPENDS system_lib
 )
 

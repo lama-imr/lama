@@ -105,7 +105,7 @@ include_directories(
 )
 
 ## Declare a cpp library
-add_library(crossing_detector src/crossing_detector.cpp)
+add_library(lj_laser_crossing_detector src/crossing_detector.cpp)
 
 ## Declare a cpp executable
 set(SRC ${SRC} src/lj_laser.cpp)
@@ -117,7 +117,7 @@ add_executable(lj_laser src/lj_laser_node.cpp ${SRC})
 # add_dependencies(lj_laser_node lj_laser_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(crossing_detector
+target_link_libraries(lj_laser_crossing_detector
 	${catkin_LIBRARIES}
 	${CGAL_LIBRARIES}
 	${CGAL_3RD_PARTY_LIBRARIES}

@@ -8,7 +8,6 @@
  *
  * Interaction with the map (created by this jockey):
  * - Getter/Setter: VectorLaserScan, jockey_name + "_laser_descriptor"
- * - Setter: SetVectorDouble, TO BE DELETED
  * - Setter: Crossing, jockey_name + "_crossing_descriptor"
  *
  * Interaction with the map (created by other jockeys):
@@ -16,7 +15,7 @@
  *
  * Subscribers (other than map-related):
  * - sensor_msg::LaserScan, "~/base_scan", 360-deg laser-scan.
- * - geometry_msgs::Pose, "~/pose"
+ * - geometry_msgs::Pose, "~/pose", heading is read from it.
  *
  * Publishers (other than map-related):
  * - 
@@ -34,6 +33,7 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Quaternion.h>
 
+#include <lama_common/polygon.h>  // for scanToPolygon
 #include <lama_interfaces/ActOnMap.h>
 #include <lama_interfaces/MapAction.h>
 #include <lama_interfaces/AddInterface.h>
@@ -45,7 +45,7 @@
 #include <lama_jockeys/localizing_jockey.h>
 #include <polygon_matcher/PolygonSimilarity.h>
 
-#include <lj_laser/crossing_detector.h>
+#include <crossing_detector/laser_crossing_detector.h>
 
 namespace lama {
 namespace lj_laser_heading {
@@ -99,7 +99,7 @@ class Jockey : public lama::LocalizingJockey
     std::string similarity_server_name_;
     ros::ServiceClient similarity_server_;
 
-    lama::lj_laser::CrossingDetector crossing_detector_;
+    lama::crossing_detector::LaserCrossingDetector crossing_detector_;
 };
 
 } // namespace lj_laser_heading

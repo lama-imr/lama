@@ -19,6 +19,8 @@ Jockey::Jockey(std::string name, const double frontier_width, const double max_f
   similarity_server_name_("similarity_server"),
   crossing_detector_(frontier_width, max_frontier_angle)
 {
+  crossing_detector_.setMaxFrontierDistance(3.0);
+
   // Initialize the client for the similarity server.
   similarity_server_ = nh_.serviceClient<polygon_matcher::PolygonSimilarity>(similarity_server_name_);
 }
@@ -140,20 +142,7 @@ void Jockey::onGetVertexDescriptor()
 
   // Add the Crossing to the descriptor list.
   lama_msgs::SetCrossing crossing_setter;
-  lama_msgs::Crossing crossing;
-  double x;
-  double y;
-  double r;
-  crossing_detector_.crossingCenter(scan_, x, y, r);
-  crossing.center.x = x;
-  crossing.center.y = y;
-  crossing.radius = r;
-  std::vector<lama_msgs::Frontier> frontiers;
-  crossing_detector_.frontiers(scan_, frontiers);
-  for (std::vector<lama_msgs::Frontier>::const_iterator it = frontiers.begin(); it != frontiers.end(); ++it)
-  {
-    crossing.frontiers.push_back(*it);
-  }
+  lama_msgs::Crossing crossing = crossing_detector_.crossingDescriptor(scan_, true);
   crossing_descriptor_setter_.call(crossing_setter);
   result_.descriptors.push_back(crossing_setter.response.id);
   

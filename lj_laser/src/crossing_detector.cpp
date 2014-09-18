@@ -25,11 +25,15 @@ void CrossingDetector::setMaxFrontierDistance(const double value)
     max_frontier_dist_set_ = true;
     return;
   }
-  ROS_ERROR("Maximum frontier distance cannot be negative");
+  ROS_ERROR("Maximum frontier distance cannot be negative, ignoring");
 }
 
 /* Return the crossing center.
  *
+ * scan[in] LaserScan
+ * x[out] X-coordinate of the crossing center
+ * y[out] Y-coordinate of the crossing center
+ * r[out] radius of the crossing center
  */
 bool CrossingDetector::crossingCenter(const sensor_msgs::LaserScan& scan, double& x, double& y, double& r) const
 {
@@ -59,7 +63,7 @@ bool CrossingDetector::crossingCenter(const sensor_msgs::LaserScan& scan, double
   return exitFound;
 }
 
-/* Return frontiers and their angle.
+/* Return frontiers.
  *
  * scan[in] LaserScan
  * frontiers[out] returned frontiers
@@ -142,9 +146,7 @@ bool CrossingDetector::frontiers(const sensor_msgs::LaserScan& scan, vector<Fron
     aAngle = bAngle;
   }
 
-  if (frontiers.size() == 0)
-    return false;
-  return true;
+  return (frontiers.size() != 0);
 }
 
 } // namespace nj_laser

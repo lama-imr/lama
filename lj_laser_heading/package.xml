@@ -42,6 +42,7 @@
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>crossing_detector</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>lama_common</build_depend>
   <build_depend>lama_interfaces</build_depend>
@@ -50,6 +51,7 @@
   <build_depend>pm_mcc</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>sensor_msgs</build_depend>
+  <run_depend>crossing_detector</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>lama_common</run_depend>
   <run_depend>lama_interfaces</run_depend>
