@@ -83,7 +83,7 @@ vector<Point2> filterRelevance(const vector<Point2> &pts, const double maxR) {
 		return pts;
 
 	list<S> r;
-	double dx,dy,rel;
+	double rel;
 	double maxRel = -1;
 	for(int j=0;j<pts.size();j++) {
 		if (j > 0 && j < pts.size()-1) {
