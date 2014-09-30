@@ -1,9 +1,9 @@
-#include <lj_laser/lj_laser.h>
+#include <lj_laser/jockey.h>
 
 namespace lama {
 namespace lj_laser {
 
-LJLaser::LJLaser(std::string name, const double frontier_width, const double max_frontier_angle) :
+Jockey::Jockey(std::string name, const double frontier_width, const double max_frontier_angle) :
   lama::LocalizingJockey(name),
   scan_received_(false),
   crossing_detector_(frontier_width, max_frontier_angle)
@@ -12,10 +12,10 @@ LJLaser::LJLaser(std::string name, const double frontier_width, const double max
 
 /* Start the LaserScan subscriber, wait for a LaserScan and exit upon reception.
  */
-void LJLaser::getLaserScan()
+void Jockey::getLaserScan()
 {
   scan_received_ = false;
-  laserHandler_ = nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 50, &LJLaser::handleLaser, this);
+  laserHandler_ = nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 50, &Jockey::handleLaser, this);
   ROS_DEBUG("Laser handler started");
   ros::Rate r(100);
   while (ros::ok())
@@ -34,7 +34,7 @@ void LJLaser::getLaserScan()
 
 /* Receive a LaserScan message and store it.
  */
-void LJLaser::handleLaser(const sensor_msgs::LaserScan msg)
+void Jockey::handleLaser(const sensor_msgs::LaserScan msg)
 {
   ROS_DEBUG("NJLaser: laser arrived with %zu beams", msg.ranges.size());
 
@@ -46,7 +46,7 @@ void LJLaser::handleLaser(const sensor_msgs::LaserScan msg)
  *
  * The descriptor are a LaserScan, a list of double (x, y, r), and a list of frontier angles.
  */
-void LJLaser::onGetVertexDescriptor()
+void Jockey::onGetVertexDescriptor()
 {
   getLaserScan();
   ros::Time start_time = ros::Time::now();
@@ -85,28 +85,28 @@ void LJLaser::onGetVertexDescriptor()
   server_.setSucceeded(result_);
 }
 
-void LJLaser::onGetEdgesDescriptors()
+void Jockey::onGetEdgesDescriptors()
 {
   result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
   result_.completion_time = ros::Duration(0.0);
   server_.setSucceeded(result_);
 }
 
-void LJLaser::onLocalizeInVertex()
+void Jockey::onLocalizeInVertex()
 {
   result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
   result_.completion_time = ros::Duration(0.0);
   server_.setSucceeded(result_);
 }
 
-void LJLaser::onLocalizeEdge()
+void Jockey::onLocalizeEdge()
 {
   result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
   result_.completion_time = ros::Duration(0.0);
   server_.setSucceeded(result_);
 }
 
-void LJLaser::onGetSimilarity()
+void Jockey::onGetSimilarity()
 {
   getLaserScan();
   ros::Time start_time = ros::Time::now();

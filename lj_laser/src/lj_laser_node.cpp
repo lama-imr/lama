@@ -1,5 +1,5 @@
 /**
- * Laser based localizing jockey.
+ * Laser-based localizing jockey.
  *
  */
 
@@ -7,7 +7,7 @@
 #include <ros/ros.h>
 #include <ros/console.h> // to change the log level to debug
 
-#include <lj_laser/lj_laser.h>
+#include <lj_laser/jockey.h>
 
 int main(int argc, char **argv)
 {
@@ -31,9 +31,10 @@ int main(int argc, char **argv)
   double max_frontier_dist;
   n.param<double>("max_frontier_distance", max_frontier_dist, 3.0);
 
-  lama::lj_laser::LJLaser jockey(localizing_jockey_server, frontier_width, max_frontier_dist);
+  lama::lj_laser::Jockey jockey(localizing_jockey_server, frontier_width, max_frontier_dist);
 
-  ROS_INFO("%s started (with action server %s)", ros::this_node::getName().c_str(), localizing_jockey_server.c_str());
+  ROS_INFO("%s started (with action server %s)", ros::this_node::getName().c_str(), jockey.getName().c_str());
   ros::spin();
+  return 0;
 }
 

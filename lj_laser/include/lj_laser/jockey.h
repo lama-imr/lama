@@ -31,8 +31,8 @@
  * - name, type, default name, description
  */
 
-#ifndef _LJ_LASER_LJ_LASER_H_
-#define _LJ_LASER_LJ_LASER_H_
+#ifndef _LJ_LASER_JOCKEY_H_
+#define _LJ_LASER_JOCKEY_H_
 
 #include <sensor_msgs/LaserScan.h>
 
@@ -46,11 +46,11 @@
 namespace lama {
 namespace lj_laser {
 
-class LJLaser : public lama::LocalizingJockey
+class Jockey : public lama::LocalizingJockey
 {
   public:
 
-    LJLaser(std::string name, const double frontier_width, const double max_frontier_angle=0.785);
+    Jockey(std::string name, const double frontier_width, const double max_frontier_angle=0.785);
 
     virtual void onGetVertexDescriptor();
     virtual void onGetEdgesDescriptors();
@@ -75,4 +75,4 @@ class LJLaser : public lama::LocalizingJockey
 } // namespace lj_laser
 } // namespace lama
 
-#endif // _LJ_LASER_LJ_LASER_H_
+#endif // _LJ_LASER_JOCKEY_H_

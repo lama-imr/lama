@@ -108,7 +108,7 @@ include_directories(
 add_library(lj_laser_crossing_detector src/crossing_detector.cpp)
 
 ## Declare a cpp executable
-set(SRC ${SRC} src/lj_laser.cpp)
+set(SRC ${SRC} src/jockey.cpp)
 set(SRC ${SRC} src/crossing_detector.cpp)
 add_executable(lj_laser src/lj_laser_node.cpp ${SRC})
 
