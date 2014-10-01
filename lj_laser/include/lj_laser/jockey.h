@@ -1,8 +1,10 @@
 /*
  * Localizing Jockey based on LaserScan.
  *
- * Localizing Jockey based on LaserScan.
- * - description of general role
+ * The role of this jockey is to get the similarity of the LaserScan
+ * descriptors of all vertices with the current LaserScan.
+ * The action is done when the similarities are computed.
+ * Implemented actions:
  * - GET_VERTEX_DESCRIPTOR: return the LaserScan, the PlaceProfile and the computed Crossing
  * - GET_SIMILARITY: return the dissimilarity based on LaserScan
  *
@@ -34,14 +36,24 @@
 #ifndef _LJ_LASER_JOCKEY_H_
 #define _LJ_LASER_JOCKEY_H_
 
+#include <cmath>
+
+#include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 
-#include <lama_common/frontier.h>
+#include <lama_common/polygon.h>  // for scanToPolygon
+#include <lama_interfaces/ActOnMap.h>
+#include <lama_interfaces/MapAction.h>
+#include <lama_interfaces/AddInterface.h>
+#include <lama_interfaces/GetVectorLaserScan.h>
 #include <lama_interfaces/SetVectorLaserScan.h>
 #include <lama_interfaces/SetVectorDouble.h>
+#include <lama_msgs/Frontier.h>
+#include <lama_msgs/SetCrossing.h>
 #include <lama_jockeys/localizing_jockey.h>
+#include <polygon_matcher/PolygonSimilarity.h>
 
-#include <lj_laser/crossing_detector.h>
+#include <crossing_detector/laser_crossing_detector.h>
 
 namespace lama {
 namespace lj_laser {
@@ -60,17 +72,38 @@ class Jockey : public lama::LocalizingJockey
     // virtual void onInterrupt();
     // virtual void onContinue();
 
+    void setSimilarityServerName(std::string name) {similarity_server_name_ = name;}
+
+  protected:
+
+    bool data_received_;
+
+    // Reception and storage of LaserScan.
+    ros::Subscriber laserHandler_;
+    ros::Time scan_reception_time_;
+    sensor_msgs::LaserScan scan_;
+
+    // Reception and Sending of LaserScan and Crossing descriptors.
+    std::string laser_interface_name_;
+    ros::ServiceClient laser_descriptor_getter_;
+    ros::ServiceClient laser_descriptor_setter_;
+    std::string crossing_interface_name_;
+    ros::ServiceClient crossing_descriptor_setter_;
+
+    // Similarity server.
+    std::string similarity_server_name_;
+    ros::ServiceClient similarity_server_;
+
+    lama::crossing_detector::LaserCrossingDetector crossing_detector_;
+
   private:
 
-    void getLaserScan();
-    void handleLaser(const sensor_msgs::LaserScan msg);
-
-    ros::Subscriber laserHandler_;
-
-    bool scan_received_;
-    sensor_msgs::LaserScan scan_;
-    CrossingDetector crossing_detector_;
+    void initMapLaserInterface();
+    void initMapCrossingInterface();
+    void getData();
+    void handleLaser(const sensor_msgs::LaserScanConstPtr& msg);
 };
+
 
 } // namespace lj_laser
 } // namespace lama

@@ -5,6 +5,7 @@ project(lj_laser)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+	crossing_detector
 	geometry_msgs
 	lama_common
 	lama_interfaces
@@ -15,9 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 ## System dependencies are found with CMake's conventions
-find_package(CGAL REQUIRED COMPONENTS Core)
-set(CGAL_DONT_OVERRIDE_CMAKE_FLAGS TRUE CACHE BOOL "Don't override flags")
-include(${CGAL_USE_FILE})
+#find_package(CGAL REQUIRED COMPONENTS Core)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -86,8 +85,8 @@ include(${CGAL_USE_FILE})
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 	INCLUDE_DIRS include
-	LIBRARIES crossing_detector
-	CATKIN_DEPENDS geometry_msgs lama_common lama_interfaces lama_jockeys lama_msgs roscpp sensor_msgs
+	LIBRARIES lj_laser_jockey
+	CATKIN_DEPENDS crossing_detector geometry_msgs lama_common lama_interfaces lama_jockeys lama_msgs roscpp sensor_msgs
 	#  DEPENDS system_lib
 )
 
@@ -101,15 +100,12 @@ catkin_package(
 include_directories(
 	include
 	${catkin_INCLUDE_DIRS}
-	${CGAL_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
-add_library(lj_laser_crossing_detector src/crossing_detector.cpp)
+add_library(lj_laser_jockey src/jockey.cpp)
 
 ## Declare a cpp executable
-set(SRC ${SRC} src/jockey.cpp)
-set(SRC ${SRC} src/crossing_detector.cpp)
 add_executable(lj_laser src/lj_laser_node.cpp ${SRC})
 
 ## Add cmake target dependencies of the executable/library
@@ -117,16 +113,9 @@ add_executable(lj_laser src/lj_laser_node.cpp ${SRC})
 # add_dependencies(lj_laser_node lj_laser_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(lj_laser_crossing_detector
-	${catkin_LIBRARIES}
-	${CGAL_LIBRARIES}
-	${CGAL_3RD_PARTY_LIBRARIES}
-	)
-
 target_link_libraries(lj_laser
+	lj_laser_jockey
 	${catkin_LIBRARIES}
-	${CGAL_LIBRARIES}
-	${CGAL_3RD_PARTY_LIBRARIES}
 	)
 
 #############

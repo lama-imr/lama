@@ -5,26 +5,84 @@ namespace lj_laser {
 
 Jockey::Jockey(std::string name, const double frontier_width, const double max_frontier_angle) :
   lama::LocalizingJockey(name),
-  scan_received_(false),
+  data_received_(false),
+  scan_reception_time_(ros::Time(0)),
+  laser_interface_name_(name + "_laser_descriptor"),
+  crossing_interface_name_(name + "_crossing_descriptor"),
+  similarity_server_name_("similarity_server"),
   crossing_detector_(frontier_width, max_frontier_angle)
 {
+  crossing_detector_.setMaxFrontierDistance(3.0);
+
+  initMapLaserInterface();
+  initMapCrossingInterface();
+
+  // Initialize the client for the similarity server.
+  similarity_server_ = nh_.serviceClient<polygon_matcher::PolygonSimilarity>(similarity_server_name_);
 }
 
-/* Start the LaserScan subscriber, wait for a LaserScan and exit upon reception.
+/* Create the getter and setter services for LaserScan descriptors.
  */
-void Jockey::getLaserScan()
+void Jockey::initMapLaserInterface()
 {
-  scan_received_ = false;
-  laserHandler_ = nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 50, &Jockey::handleLaser, this);
-  ROS_DEBUG("Laser handler started");
+  ros::ServiceClient client = nh_.serviceClient<lama_interfaces::AddInterface>("interface_factory");
+  client.waitForExistence();
+  lama_interfaces::AddInterface srv;
+  srv.request.interface_name = laser_interface_name_;
+  srv.request.get_service_message = "lama_interfaces/GetVectorLaserScan";
+  srv.request.set_service_message = "lama_interfaces/SetVectorLaserScan";
+  if (!client.call(srv))
+  {
+    ROS_ERROR("Failed to call service AddInterface");
+  }
+  if (!srv.response.success)
+  {
+    ROS_ERROR("Failed to create the Lama interface");
+  }
+  // Initialize the clients for the LaserScan getter and setter services (interface to map).
+  laser_descriptor_getter_ = nh_.serviceClient<lama_interfaces::GetVectorLaserScan>(srv.response.get_service_name);
+  laser_descriptor_getter_.waitForExistence();
+  laser_descriptor_setter_ = nh_.serviceClient<lama_interfaces::SetVectorLaserScan>(srv.response.set_service_name);
+  laser_descriptor_setter_.waitForExistence();
+}
+
+/* Create the setter services for Crossing descriptors.
+ */
+void Jockey::initMapCrossingInterface()
+{
+  ros::ServiceClient client = nh_.serviceClient<lama_interfaces::AddInterface>("interface_factory");
+  client.waitForExistence();
+  lama_interfaces::AddInterface srv;
+  srv.request.interface_name = laser_interface_name_;
+  srv.request.get_service_message = "lama_msgs/GetCrossing";
+  srv.request.set_service_message = "lama_msgs/SetCrossing";
+  if (!client.call(srv))
+  {
+    ROS_ERROR("Failed to call service AddInterface");
+  }
+  if (!srv.response.success)
+  {
+    ROS_ERROR("Failed to create the Lama interface");
+  }
+  // Initialize the client for the Crossing setter services (interface to map).
+  crossing_descriptor_setter_ = nh_.serviceClient<lama_msgs::SetCrossing>(srv.response.set_service_name);
+  crossing_descriptor_setter_.waitForExistence();
+}
+
+/* Start the subscriber, wait for a LaserScan and exit upon reception.
+ */
+void Jockey::getData()
+{
+  laserHandler_ = nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 1, &Jockey::handleLaser, this);
+
   ros::Rate r(100);
   while (ros::ok())
   {
-    if (scan_received_)
+    if (data_received_)
     {
-      // Stop the LaserScan subscriber.
+      // Stop the subscribers (may be superfluous).
       laserHandler_.shutdown();
-      scan_received_ = false;
+      data_received_ = false;
       break;
     }
     ros::spinOnce();
@@ -34,54 +92,48 @@ void Jockey::getLaserScan()
 
 /* Receive a LaserScan message and store it.
  */
-void Jockey::handleLaser(const sensor_msgs::LaserScan msg)
+void Jockey::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
 {
-  ROS_DEBUG("NJLaser: laser arrived with %zu beams", msg.ranges.size());
-
-  scan_ = msg;
-  scan_received_ = true;
+  scan_ = *msg;
+  scan_reception_time_ = msg->header.stamp;
+  data_received_ = true;
 }
 
-/* Save the vertex descriptors associated with the current robot position in the database.
+/* Return the vertex descriptors associated with the current robot position through result_.
  *
- * The descriptor are a LaserScan, a list of double (x, y, r), and a list of frontier angles.
+ * The descriptor are a LaserScan and a Crossing.
  */
+// TODO: Discuss with Karel the exact role of onGetVertexDescriptor
+// TODO: in particular: should it save something in the database? This jockey
+// is not a learning jockey.
 void Jockey::onGetVertexDescriptor()
 {
-  getLaserScan();
-  ros::Time start_time = ros::Time::now();
+  ROS_INFO("%s: Received action GET_VERTEX_DESCRIPTOR", ros::this_node::getName().c_str());
 
-  // Add the LaserScan to the database.
-  lama_interfaces::SetVectorLaserScan scan_ds;
-  scan_ds.request.descriptor.push_back(scan_);
-  ros::service::call("laser_descriptor_setter", scan_ds);
-  result_.descriptors.push_back(scan_ds.response.id);
-
-  // Add the list of double (x, y, r).
-  double x;
-  double y;
-  double r;
-  crossing_detector_.crossingCenter(scan_, x, y, r);
-  lama_interfaces::SetVectorDouble vdouble_ds;
-  vdouble_ds.request.descriptor.push_back(x);
-  vdouble_ds.request.descriptor.push_back(y);
-  vdouble_ds.request.descriptor.push_back(r);
-  ros::service::call("vector_double_setter", vdouble_ds);
-  result_.descriptors.push_back(vdouble_ds.response.id);
-
-  // Add the list of frontier angles.
-  std::vector<Frontier> frontiers;
-  crossing_detector_.frontiers(scan_, frontiers);
-  lama_interfaces::SetVectorDouble ds;
-  for (std::vector<Frontier>::const_iterator it = frontiers.begin(); it != frontiers.end(); ++it)
+  if (server_.isPreemptRequested() && !ros::ok())
   {
-    ds.request.descriptor.push_back(it->angle);
+    ROS_INFO("%s: Preempted", jockey_name_.c_str());
+    // set the action state to preempted
+    server_.setPreempted();
+    return;
   }
-  ros::service::call("vector_double_setter", ds);
-  result_.descriptors.push_back(ds.response.id);
+
+  getData();
+
+  // Add the LaserScan to the descriptor list.
+  lama_interfaces::SetVectorLaserScan vscan_setter;
+  vscan_setter.request.descriptor.push_back(scan_);
+  laser_descriptor_setter_.call(vscan_setter);
+  result_.descriptors.push_back(vscan_setter.response.id);
+
+  // Add the Crossing to the descriptor list.
+  lama_msgs::SetCrossing crossing_setter;
+  lama_msgs::Crossing crossing = crossing_detector_.crossingDescriptor(scan_, true);
+  crossing_descriptor_setter_.call(crossing_setter);
+  result_.descriptors.push_back(crossing_setter.response.id);
   
   result_.state = lama_jockeys::LocalizeResult::DONE;
-  result_.completion_time = ros::Time::now() - start_time;
+  result_.completion_time = getCompletionDuration();
   server_.setSucceeded(result_);
 }
 
@@ -108,18 +160,64 @@ void Jockey::onLocalizeEdge()
 
 void Jockey::onGetSimilarity()
 {
-  getLaserScan();
-  ros::Time start_time = ros::Time::now();
+  ROS_INFO("%s: Received action GET_SIMILARITY", ros::this_node::getName().c_str());
 
-  // Transform the scan into a polygon (move scanToPolygon to lama_common).
+  getData();
+
+  // Transform the scan into a polygon.
+  geometry_msgs::Polygon current_polygon = scanToPolygon(scan_);
+
   // Get all scans from database.
-  // Compare them to the current scan by calling one of the pm_??? service.
-  // Return what?
+  lama_interfaces::ActOnMap srv;
+  srv.request.action.action = lama_interfaces::MapAction::GET_VERTEX_LIST;
+  map_agent_.call(srv);
   
+  // Iterate over vertices and get the associated Polygon (from the LaserScan).
+  std::vector<geometry_msgs::Polygon> polygons;
+  polygons.reserve(srv.response.objects.size());
+  for (size_t i = 0; i < srv.response.objects.size(); ++i)
+  {
+    // Get all descriptors associated with the current vertex.
+    lama_interfaces::ActOnMap desc_srv;
+    desc_srv.request.action.action = lama_interfaces::MapAction::PULL_VERTEX;
+    desc_srv.request.object.id = srv.response.objects[i].id;
+    map_agent_.call(desc_srv);
+    // Transform the LaserScan into a Polygon.
+    for (size_t j = 0; j < desc_srv.response.descriptors.size(); ++j)
+    {
+      if (desc_srv.response.descriptors[j].interface_name == laser_interface_name_)
+      {
+        lama_interfaces::GetVectorLaserScan scan_srv;
+        scan_srv.request.id.descriptor_id = desc_srv.response.descriptors[j].descriptor_id;
+        laser_descriptor_getter_.call(scan_srv);
+        geometry_msgs::Polygon polygon = scanToPolygon(scan_srv.response.descriptor[0]);
+        polygons.push_back(polygon);
+      }
+    }
+  }
+  
+  // Compare them to the current polygon by calling one of the pm_* service.
+  polygon_matcher::PolygonSimilarity simi_srv;
+  simi_srv.request.polygon1 = current_polygon;
+  result_.idata.clear();
+  result_.fdata.clear();
+  result_.idata.reserve(srv.response.objects.size());
+  result_.fdata.reserve(srv.response.objects.size());
+  for (size_t i = 0; i < srv.response.objects.size(); ++i)
+  {
+    simi_srv.request.polygon2 = polygons[i];
+    similarity_server_.call(simi_srv);
+    result_.idata.push_back(srv.response.objects[i].id);
+    result_.fdata.push_back(simi_srv.response.raw_similarity);
+  }
+
+  ROS_INFO("%s: computed %zu dissimilarities", jockey_name_.c_str(),
+      result_.idata.size());
   result_.state = lama_jockeys::LocalizeResult::DONE;
-  result_.completion_time = ros::Time::now() - start_time;
+  result_.completion_time = getCompletionDuration();
   server_.setSucceeded(result_);
 }
+
 
 } // namespace lj_laser
 } // namespace lama
