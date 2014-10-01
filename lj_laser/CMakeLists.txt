@@ -110,7 +110,7 @@ add_executable(lj_laser src/lj_laser_node.cpp ${SRC})
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(lj_laser lama_interfaces_generate_messages_cpp)
+# add_dependencies(lj_laser lama_interfaces_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(lj_laser
