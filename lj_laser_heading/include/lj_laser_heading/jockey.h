@@ -2,14 +2,14 @@
  * Localizing jockey based on LaserScan associated with
  * absolute heading.
  *
- * The role of this jockey is to get the similarity of the LaserScan
+ * The role of this jockey is to get the dissimilarity of the LaserScan
  * descriptors of all vertices with the current LaserScan.
- * The action is done when the similarities are computed.
+ * The action is done when the dissimilarities are computed.
  * Implemented actions:
  * - GET_VERTEX_DESCRIPTOR: return the LaserScan, the PlaceProfile and the computed Crossing
- * - GET_SIMILARITY: return the dissimilarity based on LaserScan
+ * - GET_DISSIMILARITY: return the dissimilarity based on LaserScan
  *
- * Interaction with the map (created by this jockey):
+ * Interaction with the map (created by this jockey through lj_laser/jockey.h):
  * - Getter/Setter: VectorLaserScan, jockey_name + "_laser_descriptor"
  * - Setter: Crossing, jockey_name + "_crossing_descriptor"
  *
@@ -24,7 +24,7 @@
  * Publishers (other than map-related):
  * - 
  * Services used (other than map-related):
- * - polygon_matcher::PolygonSimilarity, "~/similarity_server"
+ * - polygon_matcher::PolygonDisimilarity, "~/dissimilarity_server"
  */
 
 #ifndef _LJ_LASER_HEADING_JOCKEY_H_

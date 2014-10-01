@@ -27,11 +27,11 @@ int main(int argc, char **argv)
   double max_frontier_dist;
   n.param<double>("max_frontier_distance", max_frontier_dist, 3.0);
 
-  std::string similarity_server_name;
-  n.param<std::string>("similarity_server_name", similarity_server_name, "similarity_server");
+  std::string dissimilarity_server_name;
+  n.param<std::string>("dissimilarity_server_name", dissimilarity_server_name, "dissimilarity_server");
 
   lama::lj_laser_heading::Jockey jockey(localizing_jockey_server, frontier_width, max_frontier_dist);
-  jockey.setSimilarityServerName(similarity_server_name);
+  jockey.setDissimilarityServerName(dissimilarity_server_name);
 
   ROS_INFO("%s started (with action server %s)", ros::this_node::getName().c_str(), localizing_jockey_server.c_str());
   ros::spin();

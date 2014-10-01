@@ -9,7 +9,7 @@ Jockey::Jockey(std::string name, const double frontier_width, const double max_f
   scan_reception_time_(ros::Time(0)),
   laser_interface_name_(name + "_laser_descriptor"),
   crossing_interface_name_(name + "_crossing_descriptor"),
-  similarity_server_name_("similarity_server"),
+  dissimilarity_server_name_("dissimilarity_server"),
   crossing_detector_(frontier_width, max_frontier_angle)
 {
   crossing_detector_.setMaxFrontierDistance(3.0);
@@ -17,8 +17,8 @@ Jockey::Jockey(std::string name, const double frontier_width, const double max_f
   initMapLaserInterface();
   initMapCrossingInterface();
 
-  // Initialize the client for the similarity server.
-  similarity_server_ = nh_.serviceClient<polygon_matcher::PolygonSimilarity>(similarity_server_name_);
+  // Initialize the client for the dissimilarity server.
+  dissimilarity_server_ = nh_.serviceClient<polygon_matcher::PolygonDissimilarity>(dissimilarity_server_name_);
 }
 
 /* Create the getter and setter services for LaserScan descriptors.
@@ -158,9 +158,9 @@ void Jockey::onLocalizeEdge()
   server_.setSucceeded(result_);
 }
 
-void Jockey::onGetSimilarity()
+void Jockey::onGetDissimilarity()
 {
-  ROS_INFO("%s: Received action GET_SIMILARITY", ros::this_node::getName().c_str());
+  ROS_INFO("%s: Received action GET_DISSIMILARITY", ros::this_node::getName().c_str());
 
   getData();
 
@@ -197,18 +197,18 @@ void Jockey::onGetSimilarity()
   }
   
   // Compare them to the current polygon by calling one of the pm_* service.
-  polygon_matcher::PolygonSimilarity simi_srv;
-  simi_srv.request.polygon1 = current_polygon;
+  polygon_matcher::PolygonDissimilarity dissimi_srv;
+  dissimi_srv.request.polygon1 = current_polygon;
   result_.idata.clear();
   result_.fdata.clear();
   result_.idata.reserve(srv.response.objects.size());
   result_.fdata.reserve(srv.response.objects.size());
   for (size_t i = 0; i < srv.response.objects.size(); ++i)
   {
-    simi_srv.request.polygon2 = polygons[i];
-    similarity_server_.call(simi_srv);
+    dissimi_srv.request.polygon2 = polygons[i];
+    dissimilarity_server_.call(dissimi_srv);
     result_.idata.push_back(srv.response.objects[i].id);
-    result_.fdata.push_back(simi_srv.response.raw_similarity);
+    result_.fdata.push_back(dissimi_srv.response.raw_dissimilarity);
   }
 
   ROS_INFO("%s: computed %zu dissimilarities", jockey_name_.c_str(),

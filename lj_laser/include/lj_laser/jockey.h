@@ -1,9 +1,9 @@
 /*
  * Localizing Jockey based on LaserScan.
  *
- * The role of this jockey is to get the similarity of the LaserScan
+ * The role of this jockey is to get the dissimilarity of the LaserScan
  * descriptors of all vertices with the current LaserScan.
- * The action is done when the similarities are computed.
+ * The action is done when the dissimilarities are computed.
  * Implemented actions:
  * - GET_VERTEX_DESCRIPTOR: return the LaserScan, the PlaceProfile and the computed Crossing
  * - GET_SIMILARITY: return the dissimilarity based on LaserScan
@@ -26,7 +26,7 @@
  *
  * Services used (other than map-related):
  * - service type, server default name, description
- * - polygon_matcher::PolygonSimilarity, "~/similarity_server", used to
+ * - polygon_matcher::PolygonDissimilarity, "~/dissimilarity_server", used to
  *    compare all known places with the current place
  *
  * Parameters:
@@ -51,7 +51,7 @@
 #include <lama_msgs/Frontier.h>
 #include <lama_msgs/SetCrossing.h>
 #include <lama_jockeys/localizing_jockey.h>
-#include <polygon_matcher/PolygonSimilarity.h>
+#include <polygon_matcher/PolygonDissimilarity.h>
 
 #include <crossing_detector/laser_crossing_detector.h>
 
@@ -68,11 +68,11 @@ class Jockey : public lama::LocalizingJockey
     virtual void onGetEdgesDescriptors();
     virtual void onLocalizeInVertex();
     virtual void onLocalizeEdge();
-    virtual void onGetSimilarity();
+    virtual void onGetDissimilarity();
     // virtual void onInterrupt();
     // virtual void onContinue();
 
-    void setSimilarityServerName(std::string name) {similarity_server_name_ = name;}
+    void setDissimilarityServerName(std::string name) {dissimilarity_server_name_ = name;}
 
   protected:
 
@@ -90,9 +90,9 @@ class Jockey : public lama::LocalizingJockey
     std::string crossing_interface_name_;
     ros::ServiceClient crossing_descriptor_setter_;
 
-    // Similarity server.
-    std::string similarity_server_name_;
-    ros::ServiceClient similarity_server_;
+    // Dissimilarity server.
+    std::string dissimilarity_server_name_;
+    ros::ServiceClient dissimilarity_server_;
 
     lama::crossing_detector::LaserCrossingDetector crossing_detector_;
 
