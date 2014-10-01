@@ -3,49 +3,52 @@
 namespace lama {
 namespace nj_laser {
 
-Jockey::Jockey(std::string name) :
-  lama::NavigatingJockey(name)
+Jockey::Jockey(std::string name, const double frontier_width) :
+  lama::NavigatingJockey(name),
+  has_scan_(false),
+  crossing_detector_(frontier_width)
 {
-	pub_crossing_marker_ = nh_.advertise<visualization_msgs::Marker>("crossing_marker", 50, true);
-  pub_exits_marker_ = nh_.advertise<visualization_msgs::Marker> ("exits_marker", 50, true);
-  pub_twist_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 1);
+  pub_twist_ = private_nh_.advertise<geometry_msgs::Twist>("cmd_vel", 1);
+	pub_crossing_marker_ = private_nh_.advertise<visualization_msgs::Marker>("crossing_marker", 50, true);
+  pub_exits_marker_ = private_nh_.advertise<visualization_msgs::Marker> ("exits_marker", 50, true);
+  pub_place_profile_ = private_nh_.advertise<sensor_msgs::PointCloud>("place_profile", 50, true);
+  pub_crossing_ = private_nh_.advertise<lama_msgs::Crossing>("crossing", 50, true);
 }
 
 void Jockey::onTraverse()
 {
-  unsetGoalReached();
-  laserHandler_ = nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 1, &Jockey::handleLaser, this);
+  ROS_INFO("%s: Received action TRAVERSE or CONTINUE", ros::this_node::getName().c_str());
+  crossing_goer_.resetIntegrals();
+
+  laserHandler_ = private_nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 1, &Jockey::handleLaser, this);
   ROS_DEBUG("Laser handler started");
   
-  ros::Rate r(50);
-  while (ros::ok() && goal_.action == lama_jockeys::NavigateGoal::TRAVERSE)
+  ros::Rate r(100);
+  while (true)
   {
-    std::vector<double> exitAngles = cross_detector.getExitAngles();
-    ROS_DEBUG("Crossing detected with %zu exits", exitAngles.size());
-    if (exitAngles.size() > 2)
+    if (server_.isPreemptRequested() && !ros::ok())
     {
-      geometry_msgs::Point goal;
-      goal.x = cross_detector.getCrossCenterX();
-      goal.y = cross_detector.getCrossCenterY();
-      geometry_msgs::Twist twist = goToGoal(goal);
+      ROS_INFO("%s: Preempted", jockey_name_.c_str());
+      // set the action state to preempted
+      server_.setPreempted();
+      break;
+    }
+
+    if (has_scan_)
+    {
+      geometry_msgs::Twist twist;
+      bool goal_reached = crossing_goer_.goto_crossing(crossing_, twist);
       pub_twist_.publish(twist);
-      if (isGoalReached())
+      ROS_DEBUG("twist (%.3f, %.3f)", twist.linear.x, twist.angular.z);
+
+      if (goal_reached)
       {
-        ROS_DEBUG("Jockey: goal reached");
-        result_.final_state = lama_jockeys::NavigateResult::DONE;
-        result_.completion_time = ros::Time::now() - getStartTime() - getInterruptionsDuration();
+        result_.final_state = result_.DONE;
+        result_.completion_time = getCompletionDuration();
         server_.setSucceeded(result_);
-        laserHandler_.shutdown();
         break;
       }
-    }
-    else
-    {
-      // Go straight if no crossing is detected.
-      geometry_msgs::Point goal;
-      goal.x = 0.5;
-      geometry_msgs::Twist twist = goToGoal(goal);
-      pub_twist_.publish(twist);
+      has_scan_ = false;
     }
     ros::spinOnce();
     r.sleep();
@@ -55,6 +58,7 @@ void Jockey::onTraverse()
 
 void Jockey::onStop()
 {
+  ROS_DEBUG("%s: Received action STOP or INTERRUPT", ros::this_node::getName().c_str());
   laserHandler_.shutdown();
   result_.final_state = lama_jockeys::NavigateResult::DONE;
   result_.completion_time = ros::Duration(0.0);
@@ -63,11 +67,13 @@ void Jockey::onStop()
 
 void Jockey::onInterrupt()
 {
+  ROS_DEBUG("%s: Received action INTERRUPT", ros::this_node::getName().c_str());
   onStop();
 }
 
 void Jockey::onContinue()
 {
+  ROS_DEBUG("%s: Received action CONTINUE", ros::this_node::getName().c_str());
   onTraverse();
 }
 
@@ -75,28 +81,32 @@ void Jockey::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
 {
   ROS_DEBUG("Jockey: laser arrived with %zu beams", msg->ranges.size());
 
-  cross_detector.crossDetect(*msg);
-  std::vector<double> desc = cross_detector.getCrossDescriptor();
-  ROS_DEBUG("Crossing x: %.3f, y: %.3f, r: %.3f, nroads: %zu", desc[0], desc[1], desc[2], desc.size() - 3);
+  crossing_ = crossing_detector_.crossingDescriptor(*msg);
+  ROS_DEBUG("%s: crossing (%.3f, %.3f, %.3f), number of exits: %zu", ros::this_node::getName().c_str(),
+        crossing_.center.x, crossing_.center.y, crossing_.radius, crossing_.frontiers.size());
 
   // Visualization: a sphere at detected crossing center
-	if (pub_crossing_marker_.getNumSubscribers())
-	{
-		visualization_msgs::Marker m = crossingMarker(msg->header.frame_id,
-				cross_detector.getCrossCenterX(), cross_detector.getCrossCenterY(), cross_detector.getCrossRadius());
-		pub_crossing_marker_.publish(m);
-	}
-
+  if (pub_crossing_marker_.getNumSubscribers())
+  {
+    visualization_msgs::Marker m = getCrossingCenterMarker(msg->header.frame_id, crossing_);
+    pub_crossing_marker_.publish(m);
+  }
 
   // Visualization: a line at each detected road
-	if (pub_exits_marker_.getNumSubscribers())
-	{
-		std::vector<double> exitAngles = cross_detector.getExitAngles();
-		visualization_msgs::Marker m = exitsMarker(msg->header.frame_id,
-        cross_detector.getCrossCenterX(), cross_detector.getCrossCenterY(),
-        exitAngles, cross_detector.getCrossRadius());
-		pub_exits_marker_.publish(m);
-	}
+  if (pub_exits_marker_.getNumSubscribers())
+  {
+    visualization_msgs::Marker m = getFrontiersMarker(msg->header.frame_id, crossing_);
+    pub_exits_marker_.publish(m);
+  }
+
+  // PlaceProfile visualization message.
+  if (pub_place_profile_.getNumSubscribers())
+  {
+    sensor_msgs::PointCloud cloud = placeProfileToPointCloud(crossing_detector_.getPlaceProfile());
+    pub_place_profile_.publish(cloud);
+  }
+
+  pub_crossing_.publish(crossing_);
 }
 
 } // namespace nj_laser

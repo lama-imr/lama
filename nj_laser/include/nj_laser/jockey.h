@@ -21,8 +21,10 @@
 #include <sensor_msgs/LaserScan.h>
 
 #include <lama_jockeys/navigating_jockey.h>
+#include <lama_msgs/crossing_visualization.h>
+#include <goto_crossing/crossing_goer.h>
+#include <crossing_detector/laser_crossing_detector.h>
 
-#include <nj_laser/crossing_detector.h>
 #include <nj_laser/visualization.h>
 
 namespace lama {
@@ -32,7 +34,7 @@ class Jockey : public lama::NavigatingJockey
 {
   public:
 
-    Jockey(std::string name);
+    Jockey(std::string name, const double frontier_width);
 
     virtual void onTraverse();
     virtual void onStop();
@@ -43,11 +45,19 @@ class Jockey : public lama::NavigatingJockey
 
   private:
 
+    // Subscribers and publishers.
     ros::Subscriber laserHandler_;
     ros::Publisher pub_crossing_marker_;
     ros::Publisher pub_exits_marker_;
     ros::Publisher pub_twist_;
-    lama::nj_laser::CrossingDetector cross_detector;
+    ros::Publisher pub_place_profile_;
+    ros::Publisher pub_crossing_;
+
+    // Internals.
+    bool has_scan_;
+    lama_msgs::Crossing crossing_;  //!> Crossing descriptor from LaserScan.
+    lama::crossing_detector::LaserCrossingDetector crossing_detector_;
+    goto_crossing::CrossingGoer crossing_goer_;
 };
 
 } // namespace nj_laser
