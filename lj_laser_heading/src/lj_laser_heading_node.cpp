@@ -11,7 +11,7 @@ int main(int argc, char **argv)
   ros::NodeHandle n("~");
   
   // Change log level.
-  if(ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
+  if(ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info))
   {
     ros::console::notifyLoggerLevelsChanged();
   }
@@ -31,9 +31,10 @@ int main(int argc, char **argv)
   n.param<std::string>("similarity_server_name", similarity_server_name, "similarity_server");
 
   lama::lj_laser_heading::Jockey jockey(localizing_jockey_server, frontier_width, max_frontier_dist);
-  jockey.set_similarity_server_name(similarity_server_name);
+  jockey.setSimilarityServerName(similarity_server_name);
 
   ROS_INFO("%s started (with action server %s)", ros::this_node::getName().c_str(), localizing_jockey_server.c_str());
   ros::spin();
+  return 0;
 }
 
