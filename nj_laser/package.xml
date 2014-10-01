@@ -37,7 +37,6 @@
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>ann</build_depend>
   <build_depend>crossing_detector</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>goto_crossing</build_depend>
@@ -48,7 +47,6 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>visualization_msgs</build_depend>
-  <run_depend>ann</run_depend>
   <run_depend>crossing_detector</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>goto_crossing</run_depend>

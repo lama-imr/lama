@@ -18,8 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 ## System dependencies are found with CMake's conventions
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
-find_package(ANN REQUIRED)
+#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -90,7 +89,7 @@ find_package(ANN REQUIRED)
 catkin_package(
 	INCLUDE_DIRS include
 	# LIBRARIES ${PROJECT_NAME}
-	CATKIN_DEPENDS ann crossing_detector geometry_msgs goto_crossing lama_common lama_jockeys lama_msgs roscpp std_msgs sensor_msgs visualization_msgs
+	CATKIN_DEPENDS crossing_detector geometry_msgs goto_crossing lama_common lama_jockeys lama_msgs roscpp std_msgs sensor_msgs visualization_msgs
 	# DEPENDS system_lib
 )
 
@@ -104,7 +103,6 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${ANN_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -113,11 +111,6 @@ include_directories(
 ## Declare a cpp executable
 set(SRC ${SRC} src/jockey.cpp)
 set(SRC ${SRC} src/visualization.cpp)
-set(SRC ${SRC} src/laloc_utils.cpp)
-set(SRC ${SRC} src/crossing_detector.cpp)
-set(SRC ${SRC} src/crossing_detector_helper.cpp)
-set(SRC ${SRC} src/voronoi.cpp)
-set(SRC ${SRC} src/shape_sim.cpp)
 add_executable(nj_laser src/nj_laser_node.cpp ${SRC})
 
 ## Add cmake target dependencies of the executable/library
@@ -128,7 +121,6 @@ add_executable(nj_laser src/nj_laser_node.cpp ${SRC})
 ## Specify libraries to link a library or executable target against
 target_link_libraries(nj_laser
 	${catkin_LIBRARIES}
-	${ANN_LIBRARIES}
 )
 
 #############
