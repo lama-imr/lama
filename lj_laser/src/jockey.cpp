@@ -53,7 +53,7 @@ void Jockey::initMapCrossingInterface()
   ros::ServiceClient client = nh_.serviceClient<lama_interfaces::AddInterface>("interface_factory");
   client.waitForExistence();
   lama_interfaces::AddInterface srv;
-  srv.request.interface_name = laser_interface_name_;
+  srv.request.interface_name = crossing_interface_name_;
   srv.request.get_service_message = "lama_msgs/GetCrossing";
   srv.request.set_service_message = "lama_msgs/SetCrossing";
   if (!client.call(srv))
@@ -124,13 +124,13 @@ void Jockey::onGetVertexDescriptor()
   lama_interfaces::SetVectorLaserScan vscan_setter;
   vscan_setter.request.descriptor.push_back(scan_);
   laser_descriptor_setter_.call(vscan_setter);
-  result_.descriptors.push_back(vscan_setter.response.id);
+  result_.descriptor_links.push_back(laserDescriptorLink(vscan_setter.response.id));
 
   // Add the Crossing to the descriptor list.
   lama_msgs::SetCrossing crossing_setter;
   lama_msgs::Crossing crossing = crossing_detector_.crossingDescriptor(scan_, true);
   crossing_descriptor_setter_.call(crossing_setter);
-  result_.descriptors.push_back(crossing_setter.response.id);
+  result_.descriptor_links.push_back(crossingDescriptorLink(crossing_setter.response.id));
   
   result_.state = lama_jockeys::LocalizeResult::DONE;
   result_.completion_time = getCompletionDuration();
@@ -177,22 +177,20 @@ void Jockey::onGetDissimilarity()
   polygons.reserve(srv.response.objects.size());
   for (size_t i = 0; i < srv.response.objects.size(); ++i)
   {
-    // Get all descriptors associated with the current vertex.
+    // Get all LaserScan descriptors associated with the current vertex.
     lama_interfaces::ActOnMap desc_srv;
-    desc_srv.request.action.action = lama_interfaces::MapAction::PULL_VERTEX;
+    desc_srv.request.action.action = lama_interfaces::MapAction::GET_DESCRIPTOR_LINKS;
     desc_srv.request.object.id = srv.response.objects[i].id;
+    desc_srv.request.interface_name = laser_interface_name_;
     map_agent_.call(desc_srv);
     // Transform the LaserScan into a Polygon.
-    for (size_t j = 0; j < desc_srv.response.descriptors.size(); ++j)
+    for (size_t j = 0; j < desc_srv.response.descriptor_links.size(); ++j)
     {
-      if (desc_srv.response.descriptors[j].interface_name == laser_interface_name_)
-      {
-        lama_interfaces::GetVectorLaserScan scan_srv;
-        scan_srv.request.id.descriptor_id = desc_srv.response.descriptors[j].descriptor_id;
-        laser_descriptor_getter_.call(scan_srv);
-        geometry_msgs::Polygon polygon = scanToPolygon(scan_srv.response.descriptor[0]);
-        polygons.push_back(polygon);
-      }
+      lama_interfaces::GetVectorLaserScan scan_srv;
+      scan_srv.request.id = desc_srv.response.descriptor_links[j].descriptor_id;
+      laser_descriptor_getter_.call(scan_srv);
+      geometry_msgs::Polygon polygon = scanToPolygon(scan_srv.response.descriptor[0]);
+      polygons.push_back(polygon);
     }
   }
   
@@ -218,6 +216,21 @@ void Jockey::onGetDissimilarity()
   server_.setSucceeded(result_);
 }
 
+lama_interfaces::DescriptorLink Jockey::laserDescriptorLink(const int32_t id)
+{
+  lama_interfaces::DescriptorLink descriptor_link;
+  descriptor_link.descriptor_id = id;
+  descriptor_link.interface_name = laser_interface_name_;
+  return descriptor_link;
+}
+
+lama_interfaces::DescriptorLink Jockey::crossingDescriptorLink(const int32_t id)
+{
+  lama_interfaces::DescriptorLink descriptor_link;
+  descriptor_link.descriptor_id = id;
+  descriptor_link.interface_name = crossing_interface_name_;
+  return descriptor_link;
+}
 
 } // namespace lj_laser
 } // namespace lama

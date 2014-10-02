@@ -43,6 +43,7 @@
 
 #include <lama_common/polygon.h>  // for scanToPolygon
 #include <lama_interfaces/ActOnMap.h>
+#include <lama_interfaces/DescriptorLink.h>
 #include <lama_interfaces/MapAction.h>
 #include <lama_interfaces/AddInterface.h>
 #include <lama_interfaces/GetVectorLaserScan.h>
@@ -102,6 +103,9 @@ class Jockey : public lama::LocalizingJockey
     void initMapCrossingInterface();
     void getData();
     void handleLaser(const sensor_msgs::LaserScanConstPtr& msg);
+
+    lama_interfaces::DescriptorLink laserDescriptorLink(const int32_t id);
+    lama_interfaces::DescriptorLink crossingDescriptorLink(const int32_t id);
 };
 
 
