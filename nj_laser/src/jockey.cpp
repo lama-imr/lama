@@ -8,6 +8,8 @@ Jockey::Jockey(std::string name, const double frontier_width) :
   has_scan_(false),
   crossing_detector_(frontier_width)
 {
+  private_nh_.getParamCached("max_frontier_distance", max_frontier_dist_);
+
   pub_twist_ = private_nh_.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 	pub_crossing_marker_ = private_nh_.advertise<visualization_msgs::Marker>("crossing_marker", 50, true);
   pub_exits_marker_ = private_nh_.advertise<visualization_msgs::Marker> ("exits_marker", 50, true);
@@ -21,7 +23,6 @@ void Jockey::onTraverse()
   crossing_goer_.resetIntegrals();
 
   laserHandler_ = private_nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 1, &Jockey::handleLaser, this);
-  ROS_DEBUG("Laser handler started");
   
   ros::Rate r(100);
   while (true)
@@ -43,6 +44,7 @@ void Jockey::onTraverse()
 
       if (goal_reached)
       {
+        laserHandler_.shutdown();
         result_.final_state = result_.DONE;
         result_.completion_time = getCompletionDuration();
         server_.setSucceeded(result_);
@@ -79,11 +81,14 @@ void Jockey::onContinue()
 
 void Jockey::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
 {
-  ROS_DEBUG("Jockey: laser arrived with %zu beams", msg->ranges.size());
+  ROS_DEBUG("%s: laser arrived with %zu beams", ros::this_node::getName().c_str(), msg->ranges.size());
 
+  crossing_detector_.setMaxFrontierDistance(max_frontier_dist_);
   crossing_ = crossing_detector_.crossingDescriptor(*msg);
   ROS_DEBUG("%s: crossing (%.3f, %.3f, %.3f), number of exits: %zu", ros::this_node::getName().c_str(),
         crossing_.center.x, crossing_.center.y, crossing_.radius, crossing_.frontiers.size());
+
+  has_scan_ = true;
 
   // Visualization: a sphere at detected crossing center
   if (pub_crossing_marker_.getNumSubscribers())

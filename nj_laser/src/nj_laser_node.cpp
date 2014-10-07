@@ -14,7 +14,6 @@
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "laser_jockey");
-  ros::NodeHandle nh;
   ros::NodeHandle private_nh("~");
   
   // Debug log level

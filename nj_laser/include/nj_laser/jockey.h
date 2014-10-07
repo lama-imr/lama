@@ -53,6 +53,9 @@ class Jockey : public lama::NavigatingJockey
     ros::Publisher pub_place_profile_;
     ros::Publisher pub_crossing_;
 
+    // Parameters shown outside.
+    double max_frontier_dist_;
+
     // Internals.
     bool has_scan_;
     lama_msgs::Crossing crossing_;  //!> Crossing descriptor from LaserScan.
