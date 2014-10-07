@@ -12,7 +12,9 @@ Jockey::Jockey(std::string name, const double frontier_width, const double max_f
   dissimilarity_server_name_("dissimilarity_server"),
   crossing_detector_(frontier_width, max_frontier_angle)
 {
-  crossing_detector_.setMaxFrontierDistance(3.0);
+  private_nh_.getParam("laser_interface_name", laser_interface_name_);
+  private_nh_.getParam("crossing_interface_name", crossing_interface_name_);
+  private_nh_.getParam("dissimilarity_server_name", dissimilarity_server_name_);
 
   initMapLaserInterface();
   initMapCrossingInterface();
@@ -33,11 +35,8 @@ void Jockey::initMapLaserInterface()
   srv.request.set_service_message = "lama_interfaces/SetVectorLaserScan";
   if (!client.call(srv))
   {
-    ROS_ERROR("Failed to call service AddInterface");
-  }
-  if (!srv.response.success)
-  {
-    ROS_ERROR("Failed to create the Lama interface");
+    ROS_ERROR("Failed to create the Lama interface %s", laser_interface_name_.c_str());
+    return;
   }
   // Initialize the clients for the LaserScan getter and setter services (interface to map).
   laser_descriptor_getter_ = nh_.serviceClient<lama_interfaces::GetVectorLaserScan>(srv.response.get_service_name);
@@ -58,11 +57,7 @@ void Jockey::initMapCrossingInterface()
   srv.request.set_service_message = "lama_msgs/SetCrossing";
   if (!client.call(srv))
   {
-    ROS_ERROR("Failed to call service AddInterface");
-  }
-  if (!srv.response.success)
-  {
-    ROS_ERROR("Failed to create the Lama interface");
+    ROS_ERROR("Failed to create the Lama interface %s", crossing_interface_name_.c_str());
   }
   // Initialize the client for the Crossing setter services (interface to map).
   crossing_descriptor_setter_ = nh_.serviceClient<lama_msgs::SetCrossing>(srv.response.set_service_name);
@@ -123,13 +118,26 @@ void Jockey::onGetVertexDescriptor()
   // Add the LaserScan to the descriptor list.
   lama_interfaces::SetVectorLaserScan vscan_setter;
   vscan_setter.request.descriptor.push_back(scan_);
-  laser_descriptor_setter_.call(vscan_setter);
+  if (!laser_descriptor_setter_.call(vscan_setter))
+  {
+    ROS_ERROR("Failed to add LaserScan[] to the map");
+    server_.setAborted();
+    return;
+  }
+  ROS_INFO("Added LaserScan[] with id %d", vscan_setter.response.id); // DEBUG
   result_.descriptor_links.push_back(laserDescriptorLink(vscan_setter.response.id));
 
   // Add the Crossing to the descriptor list.
   lama_msgs::SetCrossing crossing_setter;
   lama_msgs::Crossing crossing = crossing_detector_.crossingDescriptor(scan_, true);
-  crossing_descriptor_setter_.call(crossing_setter);
+  crossing_setter.request.descriptor = crossing;
+  if (!crossing_descriptor_setter_.call(crossing_setter))
+  {
+    ROS_ERROR("Failed to add Crossing to the map");
+    server_.setAborted();
+    return;
+  }
+  ROS_INFO("Added Crossing with id %d", crossing_setter.response.id); // DEBUG
   result_.descriptor_links.push_back(crossingDescriptorLink(crossing_setter.response.id));
   
   result_.state = lama_jockeys::LocalizeResult::DONE;
@@ -170,9 +178,21 @@ void Jockey::onGetDissimilarity()
   // Get all scans from database.
   lama_interfaces::ActOnMap srv;
   srv.request.action.action = lama_interfaces::MapAction::GET_VERTEX_LIST;
-  map_agent_.call(srv);
+  ROS_INFO("%s: calling action GET_VERTEX_LIST", ros::this_node::getName().c_str());
+  if (map_agent_.call(srv))
+  {
+    ROS_INFO("%s: received response GET_VERTEX_LIST", ros::this_node::getName().c_str());
+  }
+  else
+  {
+    ROS_ERROR("%s: failed to call map agent", ros::this_node::getName().c_str());
+    server_.setAborted();
+    return;
+  }
   
   // Iterate over vertices and get the associated Polygon (from the LaserScan).
+  std::vector<int32_t> vertices;
+  vertices.reserve(srv.response.objects.size());
   std::vector<geometry_msgs::Polygon> polygons;
   polygons.reserve(srv.response.objects.size());
   for (size_t i = 0; i < srv.response.objects.size(); ++i)
@@ -183,15 +203,28 @@ void Jockey::onGetDissimilarity()
     desc_srv.request.object.id = srv.response.objects[i].id;
     desc_srv.request.interface_name = laser_interface_name_;
     map_agent_.call(desc_srv);
-    // Transform the LaserScan into a Polygon.
-    for (size_t j = 0; j < desc_srv.response.descriptor_links.size(); ++j)
+    if (desc_srv.response.descriptor_links.empty())
     {
-      lama_interfaces::GetVectorLaserScan scan_srv;
-      scan_srv.request.id = desc_srv.response.descriptor_links[j].descriptor_id;
-      laser_descriptor_getter_.call(scan_srv);
-      geometry_msgs::Polygon polygon = scanToPolygon(scan_srv.response.descriptor[0]);
-      polygons.push_back(polygon);
+      continue;
     }
+    if (desc_srv.response.descriptor_links.empty())
+    {
+      ROS_WARN("%s: more than one descriptor with interface %s for vertex %d, taking the first one",
+          ros::this_node::getName().c_str(), laser_interface_name_.c_str(), desc_srv.request.object.id);
+    }
+    // Transform the LaserScan into a Polygon.
+    lama_interfaces::GetVectorLaserScan scan_srv;
+    scan_srv.request.id = desc_srv.response.descriptor_links[0].descriptor_id;
+    if (!laser_descriptor_getter_.call(scan_srv))
+    {
+      ROS_ERROR("%s: failed to call %s service", ros::this_node::getName().c_str(),
+          laser_interface_name_.c_str());
+      server_.setAborted();
+      return;
+    }
+    geometry_msgs::Polygon polygon = scanToPolygon(scan_srv.response.descriptor[0]);
+    vertices.push_back(desc_srv.request.object.id);
+    polygons.push_back(polygon);
   }
   
   // Compare them to the current polygon by calling one of the pm_* service.
@@ -199,13 +232,19 @@ void Jockey::onGetDissimilarity()
   dissimi_srv.request.polygon1 = current_polygon;
   result_.idata.clear();
   result_.fdata.clear();
-  result_.idata.reserve(srv.response.objects.size());
-  result_.fdata.reserve(srv.response.objects.size());
-  for (size_t i = 0; i < srv.response.objects.size(); ++i)
+  result_.idata.reserve(vertices.size());
+  result_.fdata.reserve(vertices.size());
+  for (size_t i = 0; i < vertices.size(); ++i)
   {
     dissimi_srv.request.polygon2 = polygons[i];
-    dissimilarity_server_.call(dissimi_srv);
-    result_.idata.push_back(srv.response.objects[i].id);
+    if (!dissimilarity_server_.call(dissimi_srv))
+    {
+      ROS_ERROR("%s: failed to call %s", ros::this_node::getName().c_str(),
+          dissimilarity_server_name_.c_str());
+      server_.setAborted();
+      return;
+    }
+    result_.idata.push_back(vertices[i]);
     result_.fdata.push_back(dissimi_srv.response.raw_dissimilarity);
   }
 

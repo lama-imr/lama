@@ -25,17 +25,16 @@ int main(int argc, char **argv)
   default_server_name += "_server";
 	n.param<std::string>("localizing_jockey_server_name", localizing_jockey_server, default_server_name);
 
+  /* Minimal frontier width */
+  if (!n.hasParam("frontier_width"))
+  {
+    ROS_ERROR("Parameter frontier_width not set, exiting.");
+    return 1;
+  }
   double frontier_width;
-  n.param<double>("frontier_width", frontier_width, 0.3);
+  n.param<double>("frontier_width", frontier_width, 0.0);
 
-  double max_frontier_dist;
-  n.param<double>("max_frontier_distance", max_frontier_dist, 3.0);
-
-  std::string dissimilarity_server_name;
-  n.param<std::string>("dissimilarity_server_name", dissimilarity_server_name, "dissimilarity_server");
-
-  lama::lj_laser::Jockey jockey(localizing_jockey_server, frontier_width, max_frontier_dist);
-  jockey.setDissimilarityServerName(dissimilarity_server_name);
+  lama::lj_laser::Jockey jockey(localizing_jockey_server, frontier_width);
 
   ROS_INFO("%s started (with action server %s)", ros::this_node::getName().c_str(), jockey.getName().c_str());
   ros::spin();
