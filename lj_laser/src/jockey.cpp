@@ -177,7 +177,7 @@ void Jockey::onGetDissimilarity()
 
   // Get all scans from database.
   lama_interfaces::ActOnMap srv;
-  srv.request.action.action = lama_interfaces::MapAction::GET_VERTEX_LIST;
+  srv.request.action = lama_interfaces::ActOnMapRequest::GET_VERTEX_LIST;
   ROS_INFO("%s: calling action GET_VERTEX_LIST", ros::this_node::getName().c_str());
   if (map_agent_.call(srv))
   {
@@ -199,7 +199,7 @@ void Jockey::onGetDissimilarity()
   {
     // Get all LaserScan descriptors associated with the current vertex.
     lama_interfaces::ActOnMap desc_srv;
-    desc_srv.request.action.action = lama_interfaces::MapAction::GET_DESCRIPTOR_LINKS;
+    desc_srv.request.action = lama_interfaces::ActOnMapRequest::GET_DESCRIPTOR_LINKS;
     desc_srv.request.object.id = srv.response.objects[i].id;
     desc_srv.request.interface_name = laser_interface_name_;
     map_agent_.call(desc_srv);
