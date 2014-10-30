@@ -31,6 +31,7 @@ void Jockey::initMapLaserInterface()
   client.waitForExistence();
   lama_interfaces::AddInterface srv;
   srv.request.interface_name = laser_interface_name_;
+  srv.request.interface_type = lama_interfaces::AddInterfaceRequest::CLEARTEXT;
   srv.request.get_service_message = "lama_interfaces/GetVectorLaserScan";
   srv.request.set_service_message = "lama_interfaces/SetVectorLaserScan";
   if (!client.call(srv))
@@ -53,6 +54,7 @@ void Jockey::initMapCrossingInterface()
   client.waitForExistence();
   lama_interfaces::AddInterface srv;
   srv.request.interface_name = crossing_interface_name_;
+  srv.request.interface_type = lama_interfaces::AddInterfaceRequest::CLEARTEXT;
   srv.request.get_service_message = "lama_msgs/GetCrossing";
   srv.request.set_service_message = "lama_msgs/SetCrossing";
   if (!client.call(srv))
