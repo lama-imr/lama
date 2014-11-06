@@ -4,7 +4,7 @@ namespace lama {
 namespace lj_laser {
 
 Jockey::Jockey(std::string name, const double frontier_width, const double max_frontier_angle) :
-  lama::LocalizingJockey(name),
+  LocalizingJockey(name),
   data_received_(false),
   scan_reception_time_(ros::Time(0)),
   laser_interface_name_(name + "_laser_descriptor"),
@@ -209,7 +209,7 @@ void Jockey::onGetDissimilarity()
     {
       continue;
     }
-    if (desc_srv.response.descriptor_links.empty())
+    if (desc_srv.response.descriptor_links.size() > 1)
     {
       ROS_WARN("%s: more than one descriptor with interface %s for vertex %d, taking the first one",
           ros::this_node::getName().c_str(), laser_interface_name_.c_str(), desc_srv.request.object.id);

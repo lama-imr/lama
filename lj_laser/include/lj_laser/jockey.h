@@ -14,7 +14,8 @@
  *
  * Interaction with the map (created by other jockeys):
  * - [Getter][/][Setter], message type, interface default name
- * - Getter: VectorLaserScan, "laser_descriptor"
+ * - Getter/Setter: VectorLaserScan, jockey_name + "_laser_descriptor"
+ * - Setter: Crossing, jockey_name + "_crossing_descriptor"
  *
  * Subscribers (other than map-related):
  * - message type, topic default name, description
@@ -22,7 +23,6 @@
  *
  * Publishers (other than map-related):
  * - message type, topic default name, description
- * - nav_msgs::Pose, "~/pose", robot pose
  *
  * Services used (other than map-related):
  * - service type, server default name, description
@@ -47,8 +47,6 @@
 #include <lama_interfaces/AddInterface.h>
 #include <lama_interfaces/GetVectorLaserScan.h>
 #include <lama_interfaces/SetVectorLaserScan.h>
-#include <lama_interfaces/SetVectorDouble.h>
-#include <lama_msgs/Frontier.h>
 #include <lama_msgs/SetCrossing.h>
 #include <lama_jockeys/localizing_jockey.h>
 #include <polygon_matcher/PolygonDissimilarity.h>
@@ -58,7 +56,7 @@
 namespace lama {
 namespace lj_laser {
 
-class Jockey : public lama::LocalizingJockey
+class Jockey : public LocalizingJockey
 {
   public:
 
@@ -94,7 +92,7 @@ class Jockey : public lama::LocalizingJockey
     std::string dissimilarity_server_name_;
     ros::ServiceClient dissimilarity_server_;
 
-    lama::crossing_detector::LaserCrossingDetector crossing_detector_;
+    crossing_detector::LaserCrossingDetector crossing_detector_;
 
   private:
 

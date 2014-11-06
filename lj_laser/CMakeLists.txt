@@ -106,7 +106,7 @@ include_directories(
 add_library(lj_laser_jockey src/jockey.cpp)
 
 ## Declare a cpp executable
-add_executable(lj_laser src/lj_laser_node.cpp ${SRC})
+add_executable(lj_laser src/lj_laser_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
