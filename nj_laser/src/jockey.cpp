@@ -3,7 +3,7 @@
 namespace lama {
 namespace nj_laser {
 
-Jockey::Jockey(std::string name, const double frontier_width) :
+Jockey::Jockey(const std::string& name, const double frontier_width) :
   lama::NavigatingJockey(name),
   has_scan_(false),
   crossing_detector_(frontier_width)
@@ -19,7 +19,7 @@ Jockey::Jockey(std::string name, const double frontier_width) :
 
 void Jockey::onTraverse()
 {
-  ROS_INFO("%s: Received action TRAVERSE or CONTINUE", ros::this_node::getName().c_str());
+  ROS_DEBUG("%s: Received action TRAVERSE or CONTINUE", ros::this_node::getName().c_str());
   crossing_goer_.resetIntegrals();
 
   laserHandler_ = private_nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 1, &Jockey::handleLaser, this);

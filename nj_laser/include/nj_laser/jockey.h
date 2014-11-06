@@ -11,8 +11,11 @@
  * - sensor_msg::LaserScan, "~/base_scan", 360-deg laser-scan.
  *
  * Publishers (other than map-related):
- * - visualization_msgs::Marker, "~/crossing_marker", a sphere at the crossing center.
- * - visualization_msgs::Marker, "~/exits_marker", lines from crossing center towards exits.
+ * - visualization_msgs/Marker, "~crossing_marker", a sphere at the crossing center.
+ * - visualization_msgs/Marker, "~exits_marker", lines from crossing center towards exits.
+ * - geometry_msgs/Twist, "~cmd_vel", set velocity.
+ * - lama_msgs/PlaceProfile, "~place_profile", PlaceProfile of the surroundings.
+ * - lama_msgs/Crossing, "~crossing", computed Crossing
 */
 
 #ifndef _NJ_LASER_JOCKEY_H_
@@ -34,7 +37,7 @@ class Jockey : public lama::NavigatingJockey
 {
   public:
 
-    Jockey(std::string name, const double frontier_width);
+    Jockey(const std::string& name, const double frontier_width);
 
     virtual void onTraverse();
     virtual void onStop();
