@@ -5,16 +5,17 @@ project(nj_laser)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-	crossing_detector
-	geometry_msgs
-	goto_crossing
-	lama_common
-	lama_jockeys
-	lama_msgs
-	roscpp
-	std_msgs
-	sensor_msgs
-	visualization_msgs
+  crossing_detector
+  geometry_msgs
+  goto_crossing
+  lama_common
+  lama_jockeys
+  lama_msgs
+  nj_oa_laser
+  roscpp
+  std_msgs
+  sensor_msgs
+  visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -87,10 +88,25 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-	INCLUDE_DIRS include
-	# LIBRARIES ${PROJECT_NAME}
-	CATKIN_DEPENDS crossing_detector geometry_msgs goto_crossing lama_common lama_jockeys lama_msgs roscpp std_msgs sensor_msgs visualization_msgs
-	# DEPENDS system_lib
+  INCLUDE_DIRS
+  include
+
+  # LIBRARIES ${PROJECT_NAME}
+
+  CATKIN_DEPENDS
+  crossing_detector
+  geometry_msgs
+  goto_crossing
+  lama_common
+  lama_jockeys
+  lama_msgs
+  nj_oa_laser
+  roscpp
+  std_msgs
+  sensor_msgs
+  visualization_msgs
+
+  # DEPENDS system_lib
 )
 
 ###########
@@ -119,9 +135,7 @@ add_executable(nj_laser src/nj_laser_node.cpp ${SRC})
 #add_dependencies(${PROJECT_NAME} nj_laser_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(nj_laser
-	${catkin_LIBRARIES}
-)
+target_link_libraries(nj_laser ${catkin_LIBRARIES})
 
 #############
 ## Install ##

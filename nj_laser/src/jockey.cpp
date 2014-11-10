@@ -4,16 +4,21 @@ namespace lama {
 namespace nj_laser {
 
 Jockey::Jockey(const std::string& name, const double frontier_width) :
-  lama::NavigatingJockey(name),
+  NavigatingJockey(name),
   has_scan_(false),
-  crossing_detector_(frontier_width)
+  crossing_detector_(frontier_width),
+  obstacle_avoider_(frontier_width / 2)
 {
   private_nh_.getParamCached("max_frontier_distance", max_frontier_dist_);
+  if (private_nh_.getParam("robot_radius", robot_radius_))
+  {
+    obstacle_avoider_.robot_radius = robot_radius_;
+  }
 
   pub_twist_ = private_nh_.advertise<geometry_msgs::Twist>("cmd_vel", 1);
-	pub_crossing_marker_ = private_nh_.advertise<visualization_msgs::Marker>("crossing_marker", 50, true);
+  pub_crossing_marker_ = private_nh_.advertise<visualization_msgs::Marker>("crossing_marker", 50, true);
   pub_exits_marker_ = private_nh_.advertise<visualization_msgs::Marker> ("exits_marker", 50, true);
-  pub_place_profile_ = private_nh_.advertise<sensor_msgs::PointCloud>("place_profile", 50, true);
+  pub_place_profile_ = private_nh_.advertise<sensor_msgs::PointCloud>("place_profile_cloud", 50, true);
   pub_crossing_ = private_nh_.advertise<lama_msgs::Crossing>("crossing", 50, true);
 }
 
@@ -38,18 +43,26 @@ void Jockey::onTraverse()
     if (has_scan_)
     {
       geometry_msgs::Twist twist;
-      bool goal_reached = crossing_goer_.goto_crossing(crossing_, twist);
-      pub_twist_.publish(twist);
-      ROS_DEBUG("twist (%.3f, %.3f)", twist.linear.x, twist.angular.z);
-
-      if (goal_reached)
+      if (crossing_.frontiers.size() < 3)
       {
-        laserHandler_.shutdown();
-        result_.final_state = result_.DONE;
-        result_.completion_time = getCompletionDuration();
-        server_.setSucceeded(result_);
-        break;
+        twist = obstacle_avoider_.getTwist(scan_);
+        pub_twist_.publish(twist);
       }
+      else
+      {
+        const bool goal_reached = crossing_goer_.goto_crossing(crossing_, twist);
+        pub_twist_.publish(twist);
+
+        if (goal_reached)
+        {
+          laserHandler_.shutdown();
+          result_.final_state = result_.DONE;
+          result_.completion_time = getCompletionDuration();
+          server_.setSucceeded(result_);
+          break;
+        }
+      }
+      ROS_DEBUG("%s: twist (%.3f, %.3f)", ros::this_node::getName().c_str(), twist.linear.x, twist.angular.z);
       has_scan_ = false;
     }
     ros::spinOnce();
@@ -83,8 +96,9 @@ void Jockey::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
 {
   ROS_DEBUG("%s: laser arrived with %zu beams", ros::this_node::getName().c_str(), msg->ranges.size());
 
+  scan_ = *msg;
   crossing_detector_.setMaxFrontierDistance(max_frontier_dist_);
-  crossing_ = crossing_detector_.crossingDescriptor(*msg);
+  crossing_ = crossing_detector_.crossingDescriptor(scan_);
   ROS_DEBUG("%s: crossing (%.3f, %.3f, %.3f), number of exits: %zu", ros::this_node::getName().c_str(),
         crossing_.center.x, crossing_.center.y, crossing_.radius, crossing_.frontiers.size());
 

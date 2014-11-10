@@ -14,8 +14,14 @@
  * - visualization_msgs/Marker, "~crossing_marker", a sphere at the crossing center.
  * - visualization_msgs/Marker, "~exits_marker", lines from crossing center towards exits.
  * - geometry_msgs/Twist, "~cmd_vel", set velocity.
- * - lama_msgs/PlaceProfile, "~place_profile", PlaceProfile of the surroundings.
+ * - lama_msgs/PlaceProfile, "~place_profile_cloud", PlaceProfile of the surroundings.
  * - lama_msgs/Crossing, "~crossing", computed Crossing
+ *
+ * Parameters:
+ * - ~max_frontier_distance, Float, NO_DEFAULT, points farther than this are cut are
+ *     frontier may exist.
+ * - ~robot_radius, Float, frontier_width/2, robot radius (frontier_width is
+ *     a constructor parameter)
 */
 
 #ifndef _NJ_LASER_JOCKEY_H_
@@ -27,13 +33,14 @@
 #include <lama_msgs/crossing_visualization.h>
 #include <goto_crossing/crossing_goer.h>
 #include <crossing_detector/laser_crossing_detector.h>
+#include <nj_oa_laser/twist_handler.h>
 
 #include <nj_laser/visualization.h>
 
 namespace lama {
 namespace nj_laser {
 
-class Jockey : public lama::NavigatingJockey
+class Jockey : public NavigatingJockey
 {
   public:
 
@@ -58,12 +65,15 @@ class Jockey : public lama::NavigatingJockey
 
     // Parameters shown outside.
     double max_frontier_dist_;
+    double robot_radius_;
 
     // Internals.
     bool has_scan_;
+    sensor_msgs::LaserScan scan_;  //!> Last received laser scan.
     lama_msgs::Crossing crossing_;  //!> Crossing descriptor from LaserScan.
-    lama::crossing_detector::LaserCrossingDetector crossing_detector_;
+    crossing_detector::LaserCrossingDetector crossing_detector_;
     goto_crossing::CrossingGoer crossing_goer_;
+    nj_oa_laser::TwistHandler obstacle_avoider_;  //!> Twist computation for obstacle avoidance.
 };
 
 } // namespace nj_laser
