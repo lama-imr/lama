@@ -3,23 +3,56 @@
 namespace lama {
 namespace nj_oa_laser {
 
-Jockey::Jockey(const std::string& name, const double robot_width) :
+Jockey::Jockey(const std::string& name, const double robot_radius) :
   NavigatingJockey(name),
-  robot_width_(robot_width),
-  min_distance_(2 * robot_width),
-  long_distance_(5 * robot_width),
-  turnrate_collide_(0.4),
-  max_vel_(1.0),
-  vel_close_obstacle_(0.5),
-  turnrate_factor_(0.9)
+  twist_handler_(robot_radius)
 {
-  private_nh_.getParam("robot_width", robot_width_);
-  private_nh_.getParam("min_distance", min_distance_);
-  private_nh_.getParam("long_distance", long_distance_);
-  private_nh_.getParam("turnrate_collide", turnrate_collide_);
-  private_nh_.getParam("max_vel", max_vel_);
-  private_nh_.getParam("vel_close_obstacle", vel_close_obstacle_);
-  private_nh_.getParam("turnrate_factor", turnrate_factor_);
+  initTwistHandlerParam(twist_handler_);
+}
+
+void Jockey::initTwistHandlerParam(TwistHandler& twist_handler)
+{
+  double robot_radius_;
+  if (private_nh_.getParam("robot_radius", robot_radius_))
+  {
+    twist_handler.robot_radius = robot_radius_;
+  }
+
+  double min_distance;
+  if (private_nh_.getParam("min_distance", min_distance))
+  {
+    twist_handler.min_distance = min_distance;
+  }
+
+  double long_distance;
+  if (private_nh_.getParam("long_distance", long_distance))
+  {
+    twist_handler.long_distance = long_distance;
+  }
+  
+  double turnrate_collide;
+  if (private_nh_.getParam("turnrate_collide", turnrate_collide))
+  {
+    twist_handler.turnrate_collide = turnrate_collide;
+  }
+
+  double max_vel;
+  if (private_nh_.getParam("max_vel", max_vel))
+  {
+    twist_handler.max_vel = max_vel;
+  }
+
+  double vel_close_obstacle;
+  if (private_nh_.getParam("vel_close_obstacle", vel_close_obstacle))
+  {
+    twist_handler.vel_close_obstacle = vel_close_obstacle;
+  }
+
+  double turnrate_factor;
+  if (private_nh_.getParam("turnrate_factor", turnrate_factor))
+  {
+    twist_handler.turnrate_factor = turnrate_factor;
+  }
 }
 
 void Jockey::onTraverse()
@@ -67,80 +100,12 @@ void Jockey::onContinue()
   onTraverse();
 }
 
+/* Callback for the LaserScan topic
+ */
 void Jockey::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
 {
-  manageTwist(*msg);
-}
-
-/* Compute the Twist message and publish it
-*/
-void Jockey::manageTwist(const sensor_msgs::LaserScan& scan)
-{
-   bool collide = false;
-   bool go_straight = true;
-   double sum_y = 0;
-   unsigned int count_y = 0;
-   double sum_y_colliding = 0;
-   const double half_width = robot_width_ / 2;
-   const double long_wdith = 1.5 * half_width;
-
-   double x;
-   double y;
-   for (unsigned int i = 0; i < scan.ranges.size() / 2; ++i)
-   {
-     const double angle = angles::normalize_angle(scan.angle_min + i * scan.angle_increment);
-     if ((angle < -M_PI_2) || (angle > M_PI_2))
-     {
-       // Do no consider a beam directed backward.
-       continue;
-     }
-
-     x = scan.ranges[i] * std::cos(angle);
-     y = scan.ranges[i] * std::sin(angle);
-
-     if ((x < min_distance_)  && (-half_width < y) && (y < half_width))
-     {
-       collide = true;
-       sum_y_colliding += x;   
-     } 
-
-     if ((x < long_distance_)  && (-long_wdith < y) && (y < long_wdith))
-     {
-       go_straight = false;
-     }
-     sum_y += y;
-     count_y++;  
-   }
-
-   double speed;
-   double turnrate;
-   if (collide)
-   { 
-     speed = 0;
-     if (sum_y_colliding < 0)
-     { 
-       turnrate = -turnrate_collide_;
-     }
-     else
-     {
-       turnrate = turnrate_collide_;
-     }      
-   }
-   else if (go_straight)
-   {
-     speed = max_vel_;
-     turnrate = 0;
-   }
-   else
-   {
-     speed = vel_close_obstacle_;
-     turnrate = -turnrate_factor_ * sum_y / ((double) count_y);
-   }
-
-   geometry_msgs::Twist twist;
-   twist.linear.x = speed;
-   twist.angular.z = turnrate;
-   pub_twist_.publish(twist);
+  geometry_msgs::Twist twist = twist_handler_.getTwist(*msg);
+  pub_twist_.publish(twist);
 }
 
 } // namespace nj_oa_laser

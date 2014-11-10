@@ -83,7 +83,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 	INCLUDE_DIRS include
-	LIBRARIES nj_oa_laser_jockey
+	LIBRARIES oa_laser_twist_handler nj_oa_laser_jockey
 	CATKIN_DEPENDS lama_jockeys roscpp sensor_msgs
 	#  DEPENDS system_lib
 )
@@ -102,6 +102,7 @@ include_directories(
 
 ## Declare a cpp library
 add_library(nj_oa_laser_jockey src/jockey.cpp)
+add_library(oa_laser_twist_handler src/twist_handler.cpp)
 
 ## Declare a cpp executable
 add_executable(nj_oa_laser src/nj_oa_laser_node.cpp)
@@ -111,7 +112,7 @@ add_executable(nj_oa_laser src/nj_oa_laser_node.cpp)
 # add_dependencies(nj_oa_laser_node nj_oa_laser_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(nj_oa_laser_jockey ${catkin_LIBRARIES})
+target_link_libraries(nj_oa_laser_jockey oa_laser_twist_handler ${catkin_LIBRARIES})
 target_link_libraries(nj_oa_laser nj_oa_laser_jockey ${catkin_LIBRARIES})
 
 #############

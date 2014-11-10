@@ -24,7 +24,7 @@
  * - none.
  *
  * Parameters:
- * - ~robot_width, Float, NO_DEFAULT, robot width.
+ * - ~robot_radius, Float, NO_DEFAULT, robot radius.
  * - ~min_distance, Float, 2 * robot_width, if an obstacle is closer than this,
  *     turn and don't go forward (m/s).
  * - ~long_distance, Float, 5 * robot_width, if no obstacle within this
@@ -44,11 +44,12 @@
 
 #include <cmath>
 
-#include <angles/angles.h>
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Twist.h>
 
 #include <lama_jockeys/navigating_jockey.h>
+
+#include <nj_oa_laser/twist_handler.h>
 
 namespace lama {
 namespace nj_oa_laser {
@@ -57,25 +58,16 @@ class Jockey : public NavigatingJockey
 {
   public :
 
-    Jockey(const std::string& name, const double robot_width);
+    Jockey(const std::string& name, const double robot_radius);
+
+    void initTwistHandlerParam(TwistHandler& twist_handler);
 
     virtual void onTraverse();
     virtual void onStop();
     virtual void onInterrupt();
     virtual void onContinue();
 
-    double getRobotWidth() const {return robot_width_;}
-    void setRobotWidth(const double value) {robot_width_ = value;}
-
-    double getMinDistance() const {return min_distance_;}
-    void setMinDistance(const double value) {min_distance_ = value;}
-
-    double getLongDistance() const {return long_distance_;}
-    void setLongDistance(const double value) {long_distance_ = value;}
-
   protected:
-
-    void manageTwist(const sensor_msgs::LaserScan& scan);
 
     // Subscribers and publishers.
     ros::Publisher pub_twist_;
@@ -84,15 +76,9 @@ class Jockey : public NavigatingJockey
 
     void handleLaser(const sensor_msgs::LaserScanConstPtr& msg);
 
-    // Parameters shown outside.
-    double robot_width_;  //!> (m), robot width.
-    double min_distance_;  //!> (m), if an obstacle is closer than this, turn and don't go forward.
-    double long_distance_;  //!> (m), if no obstacle within this distance, go straight.
-    double turnrate_collide_;  //!> (rad/s), turn rate when obstacle closer than min_distance_.
-    double max_vel_;  //!> (m/s), linear velocity without obstacle.
-    double vel_close_obstacle_;  //!> (m/s), linear velocity if obstacle between min_distance_ and long_distance_.
-    double turnrate_factor_;  //!> (rad.m^-1.s^-1, > 0), if obstacle closer than long_distance_,
-                              //!> turnrate = -turnrate_factor_ * mean(lateral_position_of_obstacle).
+    // Internals.
+    TwistHandler twist_handler_;  //!> To compute the twist from a LaserScan.
+
 };
 
 } // namespace nj_oa_laser
