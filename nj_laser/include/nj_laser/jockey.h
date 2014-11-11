@@ -65,10 +65,9 @@ class Jockey : public NavigatingJockey
 
     // Parameters shown outside.
     double max_frontier_dist_;
-    double robot_radius_;
 
     // Internals.
-    bool has_scan_;
+    bool has_crossing_;
     sensor_msgs::LaserScan scan_;  //!> Last received laser scan.
     lama_msgs::Crossing crossing_;  //!> Crossing descriptor from LaserScan.
     crossing_detector::LaserCrossingDetector crossing_detector_;

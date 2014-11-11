@@ -5,14 +5,15 @@ namespace nj_laser {
 
 Jockey::Jockey(const std::string& name, const double frontier_width) :
   NavigatingJockey(name),
-  has_scan_(false),
+  has_crossing_(false),
   crossing_detector_(frontier_width),
   obstacle_avoider_(frontier_width / 2)
 {
   private_nh_.getParamCached("max_frontier_distance", max_frontier_dist_);
-  if (private_nh_.getParam("robot_radius", robot_radius_))
+  double robot_radius;
+  if (private_nh_.getParam("robot_radius", robot_radius))
   {
-    obstacle_avoider_.robot_radius = robot_radius_;
+    obstacle_avoider_.robot_radius = robot_radius;
   }
 
   pub_twist_ = private_nh_.advertise<geometry_msgs::Twist>("cmd_vel", 1);
@@ -30,7 +31,7 @@ void Jockey::onTraverse()
   laserHandler_ = private_nh_.subscribe<sensor_msgs::LaserScan>("base_scan", 1, &Jockey::handleLaser, this);
   
   ros::Rate r(100);
-  while (true)
+  while (ros::ok())
   {
     if (server_.isPreemptRequested() && !ros::ok())
     {
@@ -40,7 +41,7 @@ void Jockey::onTraverse()
       break;
     }
 
-    if (has_scan_)
+    if (has_crossing_)
     {
       geometry_msgs::Twist twist;
       if (crossing_.frontiers.size() < 3)
@@ -63,7 +64,7 @@ void Jockey::onTraverse()
         }
       }
       ROS_DEBUG("%s: twist (%.3f, %.3f)", ros::this_node::getName().c_str(), twist.linear.x, twist.angular.z);
-      has_scan_ = false;
+      has_crossing_ = false;
     }
     ros::spinOnce();
     r.sleep();
@@ -102,7 +103,7 @@ void Jockey::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
   ROS_DEBUG("%s: crossing (%.3f, %.3f, %.3f), number of exits: %zu", ros::this_node::getName().c_str(),
         crossing_.center.x, crossing_.center.y, crossing_.radius, crossing_.frontiers.size());
 
-  has_scan_ = true;
+  has_crossing_ = true;
 
   // Visualization: a sphere at detected crossing center
   if (pub_crossing_marker_.getNumSubscribers())
