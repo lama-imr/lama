@@ -63,7 +63,7 @@ void Jockey::onTraverse()
   pub_twist_ = private_nh_.advertise<geometry_msgs::Twist>("cmd_vel", 1);
   
   ros::Rate r(100);
-  while (true)
+  while (ros::ok())
   {
     if (server_.isPreemptRequested() && !ros::ok())
     {
