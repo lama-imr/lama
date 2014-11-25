@@ -96,8 +96,8 @@ class Jockey : public LocalizingJockey
 
   private:
 
-    void initMapLaserInterface();
-    void initMapCrossingInterface();
+    bool initMapLaserInterface();
+    bool initMapCrossingInterface();
     void getData();
     void handleLaser(const sensor_msgs::LaserScanConstPtr& msg);
 

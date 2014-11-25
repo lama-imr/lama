@@ -16,8 +16,15 @@ Jockey::Jockey(std::string name, const double frontier_width, const double max_f
   private_nh_.getParam("crossing_interface_name", crossing_interface_name_);
   private_nh_.getParam("dissimilarity_server_name", dissimilarity_server_name_);
 
-  initMapLaserInterface();
-  initMapCrossingInterface();
+  if (!initMapLaserInterface())
+  {
+    throw ros::Exception("Initialization error");
+  }
+
+  if (!initMapCrossingInterface())
+  {
+    throw ros::Exception("Initialization error");
+  }
 
   // Initialize the client for the dissimilarity server.
   dissimilarity_server_ = nh_.serviceClient<polygon_matcher::PolygonDissimilarity>(dissimilarity_server_name_);
@@ -25,7 +32,7 @@ Jockey::Jockey(std::string name, const double frontier_width, const double max_f
 
 /* Create the getter and setter services for LaserScan descriptors.
  */
-void Jockey::initMapLaserInterface()
+bool Jockey::initMapLaserInterface()
 {
   ros::ServiceClient client = nh_.serviceClient<lama_interfaces::AddInterface>("interface_factory");
   client.waitForExistence();
@@ -37,18 +44,19 @@ void Jockey::initMapLaserInterface()
   if (!client.call(srv))
   {
     ROS_ERROR("Failed to create the Lama interface %s", laser_interface_name_.c_str());
-    return;
+    return false;
   }
   // Initialize the clients for the LaserScan getter and setter services (interface to map).
   laser_descriptor_getter_ = nh_.serviceClient<lama_interfaces::GetVectorLaserScan>(srv.response.get_service_name);
   laser_descriptor_getter_.waitForExistence();
   laser_descriptor_setter_ = nh_.serviceClient<lama_interfaces::SetVectorLaserScan>(srv.response.set_service_name);
   laser_descriptor_setter_.waitForExistence();
+  return true;
 }
 
 /* Create the setter services for Crossing descriptors.
  */
-void Jockey::initMapCrossingInterface()
+bool Jockey::initMapCrossingInterface()
 {
   ros::ServiceClient client = nh_.serviceClient<lama_interfaces::AddInterface>("interface_factory");
   client.waitForExistence();
@@ -60,10 +68,12 @@ void Jockey::initMapCrossingInterface()
   if (!client.call(srv))
   {
     ROS_ERROR("Failed to create the Lama interface %s", crossing_interface_name_.c_str());
+    return false;
   }
   // Initialize the client for the Crossing setter services (interface to map).
   crossing_descriptor_setter_ = nh_.serviceClient<lama_msgs::SetCrossing>(srv.response.set_service_name);
   crossing_descriptor_setter_.waitForExistence();
+  return true;
 }
 
 /* Start the subscriber, wait for a LaserScan and exit upon reception.
