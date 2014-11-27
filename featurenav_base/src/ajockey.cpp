@@ -6,7 +6,7 @@ namespace featurenav_base {
 const ros::Duration AJockey::max_odom_age_ = ros::Duration(0.5);
 const double AJockey::matcher_equality_multiplication_ = 0.8;
 const double AJockey::min_landmark_dist_ = 0.02;
-const ros::Duration AJockey::max_landmark_age_ = ros::Duration(2.0);
+const ros::Duration AJockey::max_landmark_age_ = ros::Duration(5.0);
 
 AJockey::AJockey(const std::string& name, const std::string& segment_interface_name, const std::string& segment_setter_name) :
   LearningJockey(name),
@@ -23,7 +23,7 @@ AJockey::AJockey(const std::string& name, const std::string& segment_interface_n
     ros::console::notifyLoggerLevelsChanged();
   }
 
-  ROS_DEBUG_STREAM(ros::this_node::getName() << ": waiting for service \"" << segment_setter_name_ << "\"");
+  ROS_DEBUG_STREAM("Waiting for service \"" << segment_setter_name_ << "\"");
   segment_setter_proxy_ = nh_.serviceClient< ::featurenav_base::SetSegment>(segment_setter_name_);
   segment_setter_proxy_.waitForExistence();
 }
@@ -83,7 +83,7 @@ void AJockey::onStartLearn()
 
 void AJockey::onStopLearn()
 {
-  ROS_DEBUG_STREAM(ros::this_node::getName() << ": received ON_STOP_LEARN");
+  ROS_DEBUG("Received ON_STOP_LEARN");
 
   if (server_.isPreemptRequested() && !ros::ok())
   {
@@ -100,7 +100,7 @@ void AJockey::onStopLearn()
   image_handler_.shutdown();
   odom_handler_.shutdown();
 
-  ROS_DEBUG_STREAM(ros::this_node::getName() << ": waiting for processImage to finish");
+  ROS_DEBUG("Waiting for processImage to finish");
 
   // Wait for processImage to finish.
   ros::Rate r(1000);
@@ -113,7 +113,7 @@ void AJockey::onStopLearn()
     ros::spinOnce();
   }
 
-  ROS_DEBUG_STREAM(ros::this_node::getName() << ": processImage finished");
+  ROS_DEBUG("processImage finished");
 
   segment_.distance = distance_from_start();
   /* for (size_t i = 0; i < landmarks_.size(); ++i) */
@@ -122,8 +122,7 @@ void AJockey::onStopLearn()
   /* } */
 
   // Save the segment into the database and return its id.
-  ROS_INFO_STREAM(ros::this_node::getName() << ": saving a segment with " <<
-      segment_.landmarks.size() << " landmarks");
+  ROS_INFO("Saving a segment with %zu landmarks",segment_.landmarks.size());
   ::featurenav_base::SetSegment segment_setter;
   segment_setter.request.descriptor = segment_;
   if (!segment_setter_proxy_.call(segment_setter))
@@ -132,7 +131,7 @@ void AJockey::onStopLearn()
     server_.setAborted();
     return;
   }
-  ROS_INFO("Added Segment with id %d", segment_setter.response.id); // DEBUG
+  ROS_DEBUG("Added Segment with id %d", segment_setter.response.id);
   result_.descriptor_link = segmentDescriptorLink(segment_setter.response.id);
   server_.setSucceeded(result_);
   reset();
@@ -177,7 +176,7 @@ void AJockey::callback_image(const sensor_msgs::ImageConstPtr& msg)
   }
   
   processImage(msg, distance_from_start());
-  ROS_DEBUG_STREAM(ros::this_node::getName() << ": computation time: " << (ros::Time::now().toSec() - start_time.toSec()));
+  ROS_DEBUG("Computation time: %.3f", (ros::Time::now().toSec() - start_time.toSec()));
 }
 
 void AJockey::callback_odom(const nav_msgs::OdometryConstPtr& msg)
@@ -199,64 +198,105 @@ size_t AJockey::processImage(const sensor_msgs::ImageConstPtr& image, const doub
 
   if (extract_features_ == NULL || match_descriptors_ == NULL)
   {
-    ROS_ERROR_STREAM(ros::this_node::getName() << " extract_feature or match_descriptors function not set, doing nothing...");
+    ROS_ERROR("Extract_feature or match_descriptors function not set, doing nothing...");
     return 0;
   }
 
   vector<KeyPoint> keypoints;
   vector<Feature> descriptors;
   extract_features_(image, keypoints, descriptors);
-  ROS_DEBUG_STREAM(ros::this_node::getName() << ": number of detected features: " << keypoints.size());
+
+  if (descriptors.empty())
+  {
+    // If no feature was detected.
+    ROS_DEBUG("No detected feature, waiting for next image");
+    return 0;
+  }
+
+  if (keypoints.size() != descriptors.size())
+  {
+    ROS_ERROR("keypoints and descriptors differ in call of extract_features function");
+    return 0;
+  }
+
+  ROS_DEBUG_STREAM("Number of detected features: " << keypoints.size());
+
+  // Match descriptors.
+  vector<Feature> query_descriptors;
+  query_descriptors.reserve(landmarks_.size());
+  for (size_t i = 0; i < landmarks_.size(); ++i)
+  {
+    query_descriptors.push_back(landmarks_[i].landmark.descriptor);
+  }
+  vector<vector<DMatch> > matches;
+  match_descriptors_(query_descriptors, descriptors, matches);
+
+  if (matches.empty())
+  {
+    ROS_ERROR_STREAM("No match found");
+  }
 
   vector<size_t> used_features_idx;
-  size_t newly_saved_landmarks_count = landmarks_.size();
-  for (int i = landmarks_.size() - 1; i >= 0; --i)
+  vector<size_t> landmark_to_save;
+  vector<size_t> landmark_to_delete;
+  for (size_t i = 0; i < matches.size();  ++i)
   {
-    if (descriptors.empty())
+    if (matches[i].size() < 2)
     {
-      // If no feature was detected.
-      ROS_DEBUG_STREAM(ros::this_node::getName() << ": no detected feature, waiting for next image");
-      break;
-    }
-    vector<Feature> query_descriptors(1, landmarks_[i].landmark.descriptor);
-    vector<vector<DMatch> > matches;
-    match_descriptors_(query_descriptors, descriptors, matches);
-
-    if (matches.empty())
-    {
-      /* ROS_ERROR_STREAM(ros::this_node::getName() << ": no match found"); */
-      continue;
-    }
-    if (matches[0].size() < 2)
-    {
-      /* ROS_ERROR_STREAM(ros::this_node::getName() << ": not enough matches, found " << matches[0].size()); */
+      ROS_DEBUG("Not enough matches, found %zu", matches[i].size());
       continue;
     }
 
-    if (matches[0][0].distance < matcher_equality_multiplication_ * matches[0][1].distance)
+    const size_t landmark_idx = matches[i][0].queryIdx;
+    const size_t feature_idx = matches[i][0].trainIdx;
+
+    if (matches[i][0].distance < matcher_equality_multiplication_ * matches[i][1].distance)
     {
-      // Feature is still visible, update current landmark.
-      landmarks_[i].landmark.dv = d;
-      landmarks_[i].landmark.v.x = keypoints[matches[0][0].trainIdx].pt.x;
-      landmarks_[i].landmark.v.y = keypoints[matches[0][0].trainIdx].pt.y;
-      landmarks_[i].last_seen = image->header.stamp;
+      // Feature is still visible, update corresponding landmark.
+      landmarks_[landmark_idx].landmark.dv = d;
+      landmarks_[landmark_idx].landmark.v.x = keypoints[feature_idx].pt.x;
+      landmarks_[landmark_idx].landmark.v.y = keypoints[feature_idx].pt.y;
+      landmarks_[landmark_idx].last_seen = image->header.stamp;
       // Save matched feature index to know which features to add as potential landmark.
-      used_features_idx.push_back(matches[0][0].trainIdx);
+      used_features_idx.push_back(feature_idx);
     }
     else
     {
-      // The feature is not available anymore, but was available long enough. Save it into segment_.
-      if (std::abs(landmarks_[i].landmark.du - landmarks_[i].landmark.dv) > min_landmark_dist_)
+      // The feature is not available anymore, but was available before.
+      if (std::abs(landmarks_[landmark_idx].landmark.du - landmarks_[landmark_idx].landmark.dv) > min_landmark_dist_)
       {
-        segment_.landmarks.push_back(landmarks_[i].landmark);
+        // The feature was visible over a certain distance, save it into segment_.
+        landmark_to_save.push_back(landmark_idx);
       }
-      landmarks_.erase(landmarks_.begin() + i);
+      // Delete the segment, whether it is used or not.
+      landmark_to_delete.push_back(landmark_idx);
     }
   }
-  newly_saved_landmarks_count -= landmarks_.size();
-  ROS_DEBUG("Number of landmarks added to segment: %zu", newly_saved_landmarks_count);
+
+  std::sort(landmark_to_save.begin(), landmark_to_save.end());
+  int last_index = -1;
+  for (int i = 0; i < landmark_to_save.size(); i++)
+  {
+    if (i != last_index)
+    {
+      segment_.landmarks.push_back(landmarks_[landmark_to_save[i]].landmark);
+    }
+    last_index = i;
+  }
+
+  std::sort(landmark_to_delete.begin(), landmark_to_delete.end());
+  for (int i = landmark_to_delete.size() - 1; i <= 0; --i)
+  {
+    if (i < landmarks_.size())
+    {
+      landmarks_.erase(landmarks_.begin() + landmark_to_delete[i]);
+    }
+  }
+
+  ROS_DEBUG("Number of landmarks added to segment: %zu", landmark_to_save.size());
   ROS_DEBUG("Reused potential landmarks: %zu", used_features_idx.size());
 
+  // Add new features as potential landmarks.
   std::sort(used_features_idx.begin(), used_features_idx.end());
   for (size_t i = 0; i < keypoints.size(); ++i)
   {
@@ -268,6 +308,7 @@ size_t AJockey::processImage(const sensor_msgs::ImageConstPtr& image, const doub
     }
   }
 
+  // Clean up old landmarks.
   size_t cleanedup_landmarks_count = landmarks_.size();
   for (int i = landmarks_.size() - 1; i >= 0; --i)
   {
@@ -277,11 +318,11 @@ size_t AJockey::processImage(const sensor_msgs::ImageConstPtr& image, const doub
     }
   }
   cleanedup_landmarks_count -= landmarks_.size();
-  ROS_DEBUG("Number of cleanup potential landmarks: %zu", newly_saved_landmarks_count);
+  ROS_DEBUG("Number of cleaned-up potential landmarks: %zu", cleanedup_landmarks_count);
 
-  ROS_DEBUG_STREAM(ros::this_node::getName() << ": number of potential landmarks: " << landmarks_.size());
-  ROS_DEBUG_STREAM(ros::this_node::getName() << ": number of learned landmarks: " << segment_.landmarks.size());
-  ROS_DEBUG_STREAM(ros::this_node::getName() << ": distance from the start [m]: " << d);
+  ROS_DEBUG("Number of potential landmarks: %zu", landmarks_.size());
+  ROS_DEBUG("Number of learned landmarks: %zu", segment_.landmarks.size());
+  ROS_DEBUG("Distance from the start [m]: %.3f", d);
 
   image_processing_running_ = false;
   return landmarks_.size();
