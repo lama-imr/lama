@@ -6,7 +6,6 @@ project(featurenav_base)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED
   COMPONENTS
-  cv_bridge
   blob
   geometry_msgs
   image_transport
@@ -99,7 +98,6 @@ catkin_package(
   featurenav_base_njockey
 
   CATKIN_DEPENDS
-  cv_bridge
   blob
   geometry_msgs
   image_transport

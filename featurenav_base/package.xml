@@ -23,7 +23,6 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>cv_bridge</build_depend>
   <build_depend>blob</build_depend>
   <build_depend>boost</build_depend>
   <build_depend>geometry_msgs</build_depend>
@@ -36,7 +35,6 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>tf</build_depend>
 
-  <run_depend>cv_bridge</run_depend>
   <run_depend>blob</run_depend>
   <run_depend>boost</run_depend>
   <run_depend>geometry_msgs</run_depend>

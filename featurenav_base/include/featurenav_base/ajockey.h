@@ -9,7 +9,6 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <tf/tf.h>
-#include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
