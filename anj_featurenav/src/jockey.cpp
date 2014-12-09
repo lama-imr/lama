@@ -15,6 +15,7 @@ namespace anj_featurenav
 Jockey::Jockey(const std::string& name) :
   feature_detector_type_("FAST"),
   descriptor_extractor_type_("BRIEF"),
+  /* descriptor_matcher_type_("FlannBased"), */
   descriptor_matcher_type_("BruteForce"),
   private_nh_("~"),
   base_name_(name)
@@ -310,12 +311,15 @@ void Jockey::initMatcherBruteforce()
     ROS_WARN_STREAM(ros::this_node::getName() << ": unknown norm type, defaulting to L2");
   }
 
-  descriptor_matcher_ .reset(new cv::BFMatcher(norm_type, cross_check));
+  descriptor_matcher_.reset(new cv::BFMatcher(norm_type, cross_check));
+  descriptor_matcher_code_ = "bf";
 }
 
 void Jockey::initMatcherFlannbased()
 {
-  descriptor_matcher_.reset(cv::DescriptorMatcher::create("FlannBased"));
+  descriptor_matcher_.reset(new cv::FlannBasedMatcher());
+  descriptor_matcher_code_ = "flann";
+  /* descriptor_matcher_.reset(cv::DescriptorMatcher::create("FlannBased")); */
 }
 
 void Jockey::extractFeatures(const sensor_msgs::ImageConstPtr& image, vector<KeyPoint>& keypoints, vector<Feature>& descriptors) const
@@ -352,7 +356,33 @@ void Jockey::matchDescriptors(const vector<Feature>& query_descriptors, const ve
   cv::Mat cv_train_descriptors;
   cvFromRos(train_descriptors, cv_train_descriptors, type);
 
-  descriptor_matcher_->knnMatch(cv_query_descriptors, cv_train_descriptors, matches, 2);
+  // FlannBasedMatcher requires CV_32F descriptor type.
+  if (descriptor_matcher_code_ == "flann")
+  {
+    cv::Mat cv_query_descriptors_copy;
+    if(cv_query_descriptors.type() != CV_32F)
+    {
+      cv_query_descriptors.convertTo(cv_query_descriptors_copy, CV_32F);
+    }
+    else
+    {
+      cv_query_descriptors_copy = cv_query_descriptors;
+    }
+    cv::Mat cv_train_descriptors_copy;
+    if(cv_train_descriptors.type() != CV_32F)
+    {
+      cv_train_descriptors.convertTo(cv_train_descriptors_copy, CV_32F);
+    }
+    else
+    {
+      cv_train_descriptors_copy = cv_train_descriptors;
+    }
+    descriptor_matcher_->knnMatch(cv_query_descriptors_copy, cv_train_descriptors_copy, matches, 2);
+  }
+  else
+  {
+    descriptor_matcher_->knnMatch(cv_query_descriptors, cv_train_descriptors, matches, 2);
+  }
 }
 
 } /* anj_featurenav */ 

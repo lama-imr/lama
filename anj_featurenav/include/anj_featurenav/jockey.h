@@ -2,6 +2,7 @@
 #define ALJ_FEATURENAV_JOCKEY_H
 
 #include <algorithm>
+#include <cassert>
 #include <vector>
 
 #include <boost/scoped_ptr.hpp>
@@ -11,6 +12,7 @@
 
 #include <ros/ros.h>
 #include <ros/console.h>
+#include <cv_bridge/cv_bridge.h>
 
 #include <featurenav_base/anjockey.h>
 #include <featurenav_base/Feature.h>
@@ -70,20 +72,30 @@ class Jockey
 inline Feature rosFromCv(const cv::Mat& descriptor)
 {
   Feature ros_descriptor;
-  if ((descriptor.type() == CV_8U) ||
-      (descriptor.type() == CV_16U))
+  if (descriptor.type() == CV_8U)
   {
-    std::copy(descriptor.begin<uint64_t>(), descriptor.end<uint64_t>(), std::back_inserter(ros_descriptor.udata));
+    std::copy(descriptor.begin<uint8_t>(), descriptor.end<uint8_t>(), std::back_inserter(ros_descriptor.udata));
   }
-  else if ((descriptor.type() == CV_8S) ||
-      (descriptor.type() == CV_16S) ||
-      (descriptor.type() == CV_32S))
+  else if (descriptor.type() == CV_16U)
   {
-    std::copy(descriptor.begin<int64_t>(), descriptor.end<int64_t>(), std::back_inserter(ros_descriptor.idata));
+    std::copy(descriptor.begin<uint16_t>(), descriptor.end<uint16_t>(), std::back_inserter(ros_descriptor.udata));
+  }
+  else if (descriptor.type() == CV_8S)
+  {
+    std::copy(descriptor.begin<int8_t>(), descriptor.end<int8_t>(), std::back_inserter(ros_descriptor.idata));
+  }
+  else if (descriptor.type() == CV_16S)
+  {
+    std::copy(descriptor.begin<int16_t>(), descriptor.end<int16_t>(), std::back_inserter(ros_descriptor.idata));
+  }
+  else if (descriptor.type() == CV_32S)
+  {
+    std::copy(descriptor.begin<int32_t>(), descriptor.end<int32_t>(), std::back_inserter(ros_descriptor.idata));
   }
   else if ((descriptor.type() == CV_32F) ||
       (descriptor.type() == CV_64F))
   {
+    // TODO: check that this works.
     std::copy(descriptor.begin<double>(), descriptor.end<double>(), std::back_inserter(ros_descriptor.fdata));
   }
   else
@@ -94,22 +106,67 @@ inline Feature rosFromCv(const cv::Mat& descriptor)
   return ros_descriptor;
 }
 
-inline cv::Mat cvFromRos(const Feature& descriptor, const int type)
+/* Copy the data from a ROS Feature to an OpenCV feature (1 x n matrix).
+ */
+inline void cvFromRos(const Feature& ros_descriptor, cv::Mat& cv_descriptor, const int type)
 {
-  if ((type == CV_8U) || (type == CV_16U))
+  if (type == CV_8U)
   {
-    cv::Mat cv_descriptor(descriptor.udata);
-    return cv_descriptor;
+    assert(ros_descriptor.udata.size() == cv_descriptor.cols);
+    for (size_t j = 0; j < ros_descriptor.udata.size(); ++j)
+    {
+      cv_descriptor.at<uint8_t>(0, j) = (uint8_t)ros_descriptor.udata[j];
+    }
   }
-  else if ((type == CV_8S) || (type == CV_16S) || (type == CV_32S))
+  else if (type == CV_16U)
   {
-    cv::Mat cv_descriptor(descriptor.idata);
-    return cv_descriptor;
+    assert(ros_descriptor.udata.size() == cv_descriptor.cols);
+    for (size_t j = 0; j < ros_descriptor.udata.size(); ++j)
+    {
+      cv_descriptor.at<uint16_t>(0, j) = (uint16_t)ros_descriptor.udata[j];
+    }
   }
-  else if ((type == CV_32F) || (type == CV_64F))
+  else if (type == CV_8S)
   {
-    cv::Mat cv_descriptor(descriptor.fdata);
-    return cv_descriptor;
+    assert(ros_descriptor.idata.size() == cv_descriptor.cols);
+    for (size_t j = 0; j < ros_descriptor.idata.size(); ++j)
+    {
+      cv_descriptor.at<int8_t>(0, j) = (int8_t)ros_descriptor.idata[j];
+    }
+  }
+  else if (type == CV_16S)
+  {
+    assert(ros_descriptor.idata.size() == cv_descriptor.cols);
+    for (size_t j = 0; j < ros_descriptor.idata.size(); ++j)
+    {
+      cv_descriptor.at<int16_t>(0, j) = (int16_t)ros_descriptor.idata[j];
+    }
+  }
+  else if (type == CV_32S)
+  {
+    assert(ros_descriptor.idata.size() == cv_descriptor.cols);
+    for (size_t j = 0; j < ros_descriptor.idata.size(); ++j)
+    {
+      cv_descriptor.at<int32_t>(0, j) = (int32_t)ros_descriptor.idata[j];
+    }
+  }
+  else if (type == CV_32F)
+  {
+    // TODO: check this.
+    assert(ros_descriptor.fdata.size() == cv_descriptor.cols);
+    for (size_t j = 0; j < ros_descriptor.fdata.size(); ++j)
+    {
+      cv_descriptor.at<float>(0, j) = ros_descriptor.fdata[j];
+    }
+  }
+  else if (type == CV_64F)
+  {
+    // TODO: check this.
+    assert(ros_descriptor.fdata.size() == cv_descriptor.cols);
+    for (size_t j = 0; j < ros_descriptor.fdata.size(); ++j)
+    {
+      cv_descriptor.at<double>(0, j) = ros_descriptor.fdata[j];
+    }
   }
   else
   {
@@ -142,9 +199,9 @@ inline void cvFromRos(const vector<Feature>& ros_descriptors, cv::Mat& cv_descri
 
   for (size_t i = 0; i < ros_descriptors.size(); ++i)
   {
-    cv_descriptors.row(i) = cvFromRos(ros_descriptors[i], type);
+    cv::Mat cv_descriptor = cv_descriptors.row(i);
+    cvFromRos(ros_descriptors[i], cv_descriptor, type);
   }
-  return;
 }
 
 } /* namespace anj_featurenav */  
