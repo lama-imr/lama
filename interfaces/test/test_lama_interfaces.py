@@ -14,6 +14,7 @@ from geometry_msgs.msg import Point32
 
 from lama_interfaces.interface_factory import interface_factory
 from lama_interfaces.cleartext_interface_factory import cleartext_interface_factory
+from lama_interfaces.srv import GetDoubleRequest
 from lama_interfaces.srv import GetVectorDoubleRequest
 from lama_interfaces.srv import GetVectorLaserScanRequest
 from lama_interfaces.srv import GetVectorPoseRequest
@@ -48,10 +49,37 @@ class RosTestCase(unittest.TestCase):
                                        msg='Argument {} differ: {} != {}'.
                                        format(slot, value0, value1))
 
-# According to http://stackoverflow.com/a/22517624, the test should work.
 
 class DbMessagePassingBase(object):
     """test setting and getting several descriptors"""
+    def test_double(self):
+        """Test for a message as a list or tuple"""
+        interface_name = 'double_' + self.interface_type
+        getter_service = 'lama_interfaces/GetDouble'
+        setter_service = 'lama_interfaces/SetDouble'
+
+        # Set up node as well as getter and setter services.
+        rospy.init_node('lama_interfaces', anonymous=True)
+        iface = self.interface_factory(interface_name,
+                                       getter_service,
+                                       setter_service)
+        get_srv = rospy.ServiceProxy(iface.getter_service_name,
+                                     iface.getter_service_class)
+        set_srv = rospy.ServiceProxy(iface.setter_service_name,
+                                     iface.setter_service_class)
+
+        msg = 5.678
+
+        descriptor_from_setter = set_srv(msg)
+        # descriptor_from_setter cannot be passed to get_srv because of
+        # type incompatibility, "transform" it to a ..._getRequest()
+        descriptor_to_getter = GetDoubleRequest()
+        descriptor_to_getter.id = descriptor_from_setter.id
+        response = get_srv(descriptor_to_getter)
+
+        self.assertIsNot(msg, response.descriptor)
+        self.assertAlmostEqual(msg, response.descriptor, places=6)
+
     def test_vector_double(self):
         """Test for a message as a list or tuple"""
         interface_name = 'vector_double_descriptor_' + self.interface_type

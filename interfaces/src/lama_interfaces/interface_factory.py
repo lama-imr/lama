@@ -8,7 +8,7 @@ from sqlalchemy.types import Integer, Binary
 from abstract_db_interface import AbstractDBInterface
 
 # sqlalchemy engine (argument to sqlalchemy.create_engine)
-g_engine_name = rospy.get_param('/database_engine', 'sqlite:///lama.sqlite')
+_engine_name = rospy.get_param('/database_engine', 'sqlite:///lama.sqlite')
 
 
 class DBInterface(AbstractDBInterface):
@@ -115,7 +115,7 @@ def interface_factory(interface_name, getter_srv_msg, setter_srv_msg):
         getter_srv_msg = getter_srv_msg[:-4]
     if setter_srv_msg.endswith('.srv'):
         setter_srv_msg = setter_srv_msg[:-4]
-    iface = DBInterface(g_engine_name, interface_name,
+    iface = DBInterface(_engine_name, interface_name,
                         getter_srv_msg, setter_srv_msg,
                         start=True)
     return iface

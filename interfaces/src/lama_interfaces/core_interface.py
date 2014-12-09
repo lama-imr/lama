@@ -19,12 +19,12 @@ from lama_interfaces.srv import ActOnMapResponse
 
 from abstract_db_interface import AbstractDBInterface
 
-g_default_core_table_name = 'lama_object'
-g_default_descriptor_table_name = 'lama_descriptor_link'
-g_default_map_agent_name = '/lama_map_agent'
+_default_core_table_name = 'lama_object'
+_default_descriptor_table_name = 'lama_descriptor_link'
+_default_map_agent_name = '/lama_map_agent'
 
 # sqlalchemy engine (argument to sqlalchemy.create_engine)
-g_engine_name = rospy.get_param('/database_engine', 'sqlite:///lama.sqlite')
+_engine_name = rospy.get_param('/database_engine', 'sqlite:///lama.sqlite')
 
 
 class CoreDBInterface(AbstractDBInterface):
@@ -42,9 +42,9 @@ class CoreDBInterface(AbstractDBInterface):
         """
         self._check_md5sum()
         if not interface_name:
-            interface_name = g_default_core_table_name
+            interface_name = _default_core_table_name
         if not descriptor_table_name:
-            descriptor_table_name = g_default_descriptor_table_name
+            descriptor_table_name = _default_descriptor_table_name
         self.descriptor_table_name = descriptor_table_name
 
         get_srv_type = 'lama_interfaces/GetLamaObject'
@@ -60,7 +60,7 @@ class CoreDBInterface(AbstractDBInterface):
     def _check_md5sum(self):
         """Check that current implementation is compatible with LamaObject"""
         lama_object = LamaObject()
-        if lama_object._md5sum != "c453f8236f4931ea54fb608514a25926":
+        if lama_object._md5sum != "15d9ec1a7b5a1e0aaddf5bfcebbe61d0":
             raise rospy.ROSException("CoreDBInterface incompatible " +
                                      "with current LamaObject implementation")
 
@@ -81,6 +81,8 @@ class CoreDBInterface(AbstractDBInterface):
         table.append_column(Column('id_in_world',
                                    types.Integer))
         table.append_column(Column('name', types.String))
+        table.append_column(Column('emitter_id', types.Integer))
+        table.append_column(Column('emitter_name', types.String))
         table.append_column(Column('type', types.Integer))
         self.core_table = table
 
@@ -167,6 +169,8 @@ class CoreDBInterface(AbstractDBInterface):
         lama_object.id = id_
         lama_object.id_in_world = result['id_in_world']
         lama_object.name = result['name']
+        lama_object.emitter_id = result['emitter_id']
+        lama_object.emitter_name = result['emitter_name']
         lama_object.type = result['type']
 
         if lama_object.type == LamaObject.EDGE:
@@ -180,7 +184,7 @@ class CoreDBInterface(AbstractDBInterface):
         """Get the references of a LamaObject"""
         # Make the transaction for the array 'references'.
         query = self.core_obj_ref_table.select(
-            whereclause=(self.core_obj_ref_table.parent_id == id_))
+            whereclause=(self.core_obj_ref_table.c.parent_id == id_))
         connection = self.engine.connect()
         transaction = connection.begin()
         refs = connection.execute(query).fetchall()
@@ -287,6 +291,8 @@ class CoreDBInterface(AbstractDBInterface):
         insert_args = {
             'id_in_world': lama_object.id_in_world,
             'name': lama_object.name,
+            'emitter_id': lama_object.emitter_id,
+            'emitter_name': lama_object.emitter_name,
             'type': lama_object.type,
         }
         result = connection.execute(self.core_table.insert(), insert_args)
@@ -319,7 +325,7 @@ class MapAgentInterface(object):
         action_srv_type = 'lama_interfaces/ActOnMap'
         srv_action_class = roslib.message.get_service_class(action_srv_type)
         # Action class.
-        map_agent_name = rospy.get_param('map_agent', g_default_map_agent_name)
+        map_agent_name = rospy.get_param('map_agent', _default_map_agent_name)
         self.action_service_name = map_agent_name
         self.action_service_class = srv_action_class
         if start:
@@ -329,7 +335,7 @@ class MapAgentInterface(object):
         else:
             self.map_agent = None
 
-        self.core_iface = CoreDBInterface(g_engine_name, start=False)
+        self.core_iface = CoreDBInterface(_engine_name, start=False)
         self.engine = self.core_iface.engine
 
     def action_callback(self, msg):
@@ -422,9 +428,11 @@ class MapAgentInterface(object):
             raise rospy.ServiceException(err)
 
         # Ensure that the descriptor exists in the database.
+        if not msg.interface_name:
+            raise rospy.ServiceException('Missing interface name')
         table_name = msg.interface_name
         if not self.core_iface.has_table(table_name):
-            err = 'No interface {} in the database'.format(
+            err = 'No interface "{}" in the database'.format(
                 msg.interface_name)
             raise rospy.ServiceException(err)
         table = self.core_iface.metadata.tables[table_name]
@@ -597,6 +605,6 @@ def core_interface():
     it starts ROS services and an error is raised if services are started
     twice.
     """
-    iface = CoreDBInterface(g_engine_name, start=True)
+    iface = CoreDBInterface(_engine_name, start=True)
     map_agent_iface = MapAgentInterface(start=True)
     return iface, map_agent_iface

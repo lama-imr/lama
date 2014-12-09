@@ -13,7 +13,7 @@ from sqlalchemy import types
 from abstract_db_interface import AbstractDBInterface
 
 # Mapping from python types to sqlalchemy types.
-type_map = {
+_type_map = {
     'bool': types.Boolean(),
     'char': types.SmallInteger(unsigned=True),
     'int8': types.SmallInteger(),
@@ -30,13 +30,13 @@ type_map = {
     'string': types.Text(),
 }
 
-suffix_for_array_table = '_data_'
-suffix_for_builtin = '_value_'
+_suffix_for_array_table = '_data_'
+_suffix_for_builtin = '_value_'
 
 _types_table_name = 'message_types'
 
 # sqlalchemy engine (argument to sqlalchemy.create_engine)
-g_engine_name = rospy.get_param('/database_engine', 'sqlite:///lama.sqlite')
+_engine_name = rospy.get_param('/database_engine', 'sqlite:///lama.sqlite')
 
 # TODO: remove all occurences of roslib.msgs
 
@@ -197,15 +197,15 @@ def getMsgArgFromTable(msg, tablename, field='', seq_nums=[], has_srvname=True):
     """Return the part of a message determined by a table name and a field
 
     Return the part of a message determined by a table name and a field. If the
-    tablename contains suffix_for_array_table, seq_nums must give the index of
-    each item. There is a list in the message each time suffix_for_array_table
+    tablename contains _suffix_for_array_table, seq_nums must give the index of
+    each item. There is a list in the message each time _suffix_for_array_table
     is met.
     """
-    if tablename.count(suffix_for_array_table) != len(seq_nums):
+    if tablename.count(_suffix_for_array_table) != len(seq_nums):
         raise ValueError('Non consistent sequence numbers ' +
                          '({} given, {} excepted)'.format(
                              len(seq_nums),
-                             tablename.count(suffix_for_array_table)))
+                             tablename.count(_suffix_for_array_table)))
     if has_srvname:
         # Get the table name without leading service name.
         idx_arg_start = tablename.find('@')
@@ -216,7 +216,11 @@ def getMsgArgFromTable(msg, tablename, field='', seq_nums=[], has_srvname=True):
         else:
             # tablename is only the service name, i.e. it is irrelevant for
             # the ROS message. Get the field directly.
-            return getMsgArgValue(msg, field)
+            if isinstance(msg, roslib.message.Message):
+                return getMsgArgValue(msg, field)
+            else:
+                # Built-in types (float, int, str, ...)
+                return msg
 
     if not seq_nums:
         if field and tablename:
@@ -227,8 +231,8 @@ def getMsgArgFromTable(msg, tablename, field='', seq_nums=[], has_srvname=True):
 
     # Pop the first sequence number and associated argument value.
     seq_num0 = seq_nums.pop(0)
-    first_arg, last_args = tablename.split('@' + suffix_for_array_table, 1)
-    if (not last_args) and field == suffix_for_builtin:
+    first_arg, last_args = tablename.split('@' + _suffix_for_array_table, 1)
+    if (not last_args) and field == _suffix_for_builtin:
         # Builtin-type.
         # Remove the leading '@'.
         first_arg = first_arg[1:]
@@ -246,15 +250,15 @@ def setMsgArgFromTable(msg, value, tablename, field='', seq_nums=[],
     """Set the part of a message determined by a table name and a field
 
     Return the part of a message determined by a table name and a field. If the
-    tablename contains suffix_for_array_table, seq_nums must give the index of
-    each item. There is a list in the message each time suffix_for_array_table
+    tablename contains _suffix_for_array_table, seq_nums must give the index of
+    each item. There is a list in the message each time _suffix_for_array_table
     is met.
     """
-    if tablename.count(suffix_for_array_table) != len(seq_nums):
+    if tablename.count(_suffix_for_array_table) != len(seq_nums):
         raise ValueError('Non consistent sequence numbers ' +
                          '({} given, {} excepted)'.format(
                              len(seq_nums),
-                             tablename.count(suffix_for_array_table)))
+                             tablename.count(_suffix_for_array_table)))
     if has_srvname:
         # Get the table name without leading service name.
         idx_arg_start = tablename.find('@')
@@ -278,8 +282,8 @@ def setMsgArgFromTable(msg, value, tablename, field='', seq_nums=[],
 
     # Pop the first sequence number and associated argument value.
     seq_num0 = seq_nums.pop(0)
-    first_arg, last_args = tablename.split('@' + suffix_for_array_table, 1)
-    if (not last_args) and field == suffix_for_builtin:
+    first_arg, last_args = tablename.split('@' + _suffix_for_array_table, 1)
+    if (not last_args) and field == _suffix_for_builtin:
         # Builtin-type.
         # Remove the leading '@' (works also with empty string).
         first_arg = first_arg[1:]
@@ -370,7 +374,7 @@ class TypeInspector(object):
         if self.is_array_of_builtin:
             return []
         if self.is_builtin:
-            return [suffix_for_builtin]
+            return [_suffix_for_builtin]
         if self.is_header:
             return ['seq', 'stamp.secs', 'stamp.nsecs', 'frame_id']
         msg = self.msg_class()
@@ -388,7 +392,7 @@ class TypeInspector(object):
                 # we cannot consider it as being from a header argument. If
                 # exists a message with such a case, a recognition feature will
                 # have to be implemented here.
-                rospy.logerr('header argument as nested message argument ' +
+                rospy.logerr('Header argument as nested message argument ' +
                              'not supported')
                 continue
             value = getMsgArgValue(msg, arg)
@@ -406,7 +410,7 @@ class TypeInspector(object):
         if self.is_builtin or self.is_header:
             return []
         if self.is_array_of_builtin:
-            return [suffix_for_builtin]
+            return [_suffix_for_builtin]
         msg = self.msg_class()
         roslib_args = roslib.message.get_printable_message_args(msg).split()
         args = []
@@ -478,15 +482,15 @@ class RosSqlTable(object):
         self.rosbasetype = insp.base_type
 
         if insp.is_builtin or insp.is_array_of_builtin:
-            self.sqlrosfields.append(rosFieldToSql(suffix_for_builtin))
-            self.sqlrostypes.append(type_map[insp.base_type])
+            self.sqlrosfields.append(rosFieldToSql(_suffix_for_builtin))
+            self.sqlrostypes.append(_type_map[insp.base_type])
             return
 
         msg = insp.msg_class()
         # Single value arguments will belong to this table.
         for arg in insp.get_single_args():
             self.sqlrosfields.append(rosFieldToSql(arg))
-            self.sqlrostypes.append(type_map[getMsgArgType(msg, arg)])
+            self.sqlrostypes.append(_type_map[getMsgArgType(msg, arg)])
 
         # List arguments will belong to another table.
         for arg in insp.get_list_args():
@@ -506,10 +510,10 @@ def rosFieldToSql(rosfield):
 def sqlFieldToRos(sqlfield):
     """Return the ROS field name from an SQL table column name"""
     sqlfield = sqlfield.replace('@', '.')
-    if sqlfield.endswith(suffix_for_builtin):
+    if sqlfield.endswith(_suffix_for_builtin):
         # Get the ROS field name, i.e. everything before
-        # suffix_for_builtin or ('@' + suffix...).
-        return sqlfield.rsplit('@', 1)[0].replace(suffix_for_builtin, '')
+        # _suffix_for_builtin or ('@' + suffix...).
+        return sqlfield.rsplit('@', 1)[0].replace(_suffix_for_builtin, '')
     else:
         return sqlfield
 
@@ -573,7 +577,7 @@ class SqlMsg(object):
 
         if (not parenttable) and table.is_array:
             insp = TypeInspector(insp.base_type)
-            nested_tablename = tablename + '@' + suffix_for_array_table
+            nested_tablename = tablename + '@' + _suffix_for_array_table
             table = RosSqlTable(nested_tablename,
                                 insp=insp,
                                 parenttable=tablename)
@@ -585,83 +589,10 @@ class SqlMsg(object):
         for field, subtype in zip(table.rosarrayfields, table.rosarraytypes):
             subtablename = (nested_tablename +
                             '@' + field +
-                            '@' + suffix_for_array_table)
+                            '@' + _suffix_for_array_table)
             self._createTable(subtablename,
                               type_=subtype,
                               parenttable=nested_tablename)
-
-    def setter(self, engine, msg):
-        """Add to the database and return the id
-
-        Parameters
-        ----------
-        - engine: sqlalchemy.engine instance.
-        - msg: instance of ROS message.
-        """
-        def parentSeqs(ids, name):
-            seqs = []
-            for this_name, this_seq in ids.iterkeys():
-                if this_name == name:
-                    seqs.append(this_seq)
-            return seqs
-
-        def addRosFields(insert_args, msg, rossqltable, seq_nums):
-            for field in rossqltable.sqlrosfields:
-                insert_args[field] = getMsgArgFromTable(msg,
-                                                        rossqltable.name,
-                                                        field=field,
-                                                        seq_nums=seq_nums)
-
-        def insertInTable(msg, rossqltable):
-            insert_args = {}
-            parent_seqs = parentSeqs(ids, rossqltable.parenttable)
-            for seq in parent_seqs:
-                # Remove the last suffix_for_array_table
-                suffix = '@' + suffix_for_array_table
-                if suffix in rossqltable.name:
-                    name, _ = rossqltable.name.rsplit(suffix,
-                                                      1)
-                else:
-                    name = rossqltable.name
-                parentmsg = getMsgArgFromTable(msg,
-                                               name,
-                                               seq_nums=seq)
-                for seq_num in range(len(parentmsg)):
-                    insert_args['parent_id'] = ids[rossqltable.parenttable,
-                                                   seq]
-                    insert_args['seq_num'] = seq_num
-                    new_seq = seq + (seq_num,)
-                    addRosFields(insert_args, msg, rossqltable, new_seq)
-                    result = connection.execute(rossqltable.sqltable.insert(),
-                                                insert_args)
-                    ids[rossqltable.name, new_seq] = (
-                        result.inserted_primary_key[0])
-
-        connection = engine.connect()
-        transaction = connection.begin()
-
-        # ids is a map (table, seq_nums): id. seq_nums is the tuple of sequence
-        # numbers used to reach the item with id id in the table it is found.
-        ids = {}
-
-        # Treat the first table separately.
-        rossqltable = self.tables[0]
-        insert_args = {}
-        for field in rossqltable.sqlrosfields:
-            insert_args[field] = getMsgArgFromTable(msg,
-                                                    rossqltable.name,
-                                                    field)
-        result = connection.execute(rossqltable.sqltable.insert(), insert_args)
-        return_id = result.inserted_primary_key[0]
-        ids[rossqltable.name, tuple()] = return_id
-
-        # Treat other tables.
-        for rossqltable in self.tables[1:]:
-            insertInTable(msg, rossqltable)
-
-        transaction.commit()
-        connection.close()
-        return return_id
 
     def getter(self, engine, id_):
         """Retrieve a message from the database
@@ -679,10 +610,10 @@ class SqlMsg(object):
 
         def setRosFields(msg, sqlresult, rossqltable, seq_nums):
             for field in rossqltable.sqlrosfields:
-                print(msg)
-                print(rossqltable.name)
-                print(field)
-                print(seq_nums)
+                # print(msg)
+                # print(rossqltable.name)
+                # print(field)
+                # print(seq_nums)
                 setMsgArgFromTable(msg,
                                    sqlresult[field],
                                    rossqltable.name,
@@ -740,11 +671,15 @@ class SqlMsg(object):
             msg = []
         else:
             insp = TypeInspector(rossqltable.rosbasetype)
-            # The first table cannot be a builtin type, so insp.msg_class
-            # is valid.
-            msg = insp.msg_class()
-            for field in rossqltable.sqlrosfields:
-                setMsgArgValue(msg, field, result[field])
+            # The first table can be a builtin type, so insp.msg_class
+            # may not be valid.
+            if insp.msg_class is None:
+                # Builtin type
+                msg = result[_suffix_for_builtin]
+            else:
+                msg = insp.msg_class()
+                for field in rossqltable.sqlrosfields:
+                    setMsgArgValue(msg, field, result[field])
 
         # All other tables are arrays.
         for rossqltable in self.tables[1:]:
@@ -753,6 +688,80 @@ class SqlMsg(object):
         transaction.commit()
         connection.close()
         return msg
+
+    def setter(self, engine, msg):
+        """Add to the database and return the id
+
+        Parameters
+        ----------
+        - engine: sqlalchemy.engine instance.
+        - msg: instance of ROS message.
+        """
+        def parentSeqs(ids, name):
+            seqs = []
+            for this_name, this_seq in ids.iterkeys():
+                if this_name == name:
+                    seqs.append(this_seq)
+            return seqs
+
+        def addRosFields(insert_args, msg, rossqltable, seq_nums):
+            for field in rossqltable.sqlrosfields:
+                insert_args[field] = getMsgArgFromTable(msg,
+                                                        rossqltable.name,
+                                                        field=field,
+                                                        seq_nums=seq_nums)
+
+        def insertInTable(msg, rossqltable):
+            insert_args = {}
+            parent_seqs = parentSeqs(ids, rossqltable.parenttable)
+            for seq in parent_seqs:
+                # Remove the last _suffix_for_array_table
+                suffix = '@' + _suffix_for_array_table
+                if suffix in rossqltable.name:
+                    name, _ = rossqltable.name.rsplit(suffix,
+                                                      1)
+                else:
+                    name = rossqltable.name
+                parentmsg = getMsgArgFromTable(msg,
+                                               name,
+                                               seq_nums=seq)
+                for seq_num in range(len(parentmsg)):
+                    insert_args['parent_id'] = ids[rossqltable.parenttable,
+                                                   seq]
+                    insert_args['seq_num'] = seq_num
+                    new_seq = seq + (seq_num,)
+                    addRosFields(insert_args, msg, rossqltable, new_seq)
+                    result = connection.execute(rossqltable.sqltable.insert(),
+                                                insert_args)
+                    ids[rossqltable.name, new_seq] = (
+                        result.inserted_primary_key[0])
+
+        connection = engine.connect()
+        transaction = connection.begin()
+
+        # ids is a map (table, seq_nums): id. seq_nums is the tuple of sequence
+        # numbers used to reach the item with id id in the table it is found.
+        ids = {}
+
+        # Treat the first table separately.
+        rossqltable = self.tables[0]
+        insert_args = {}
+
+        for field in rossqltable.sqlrosfields:
+            insert_args[field] = getMsgArgFromTable(msg,
+                                                    rossqltable.name,
+                                                    field)
+        result = connection.execute(rossqltable.sqltable.insert(), insert_args)
+        return_id = result.inserted_primary_key[0]
+        ids[rossqltable.name, tuple()] = return_id
+
+        # Treat other tables.
+        for rossqltable in self.tables[1:]:
+            insertInTable(msg, rossqltable)
+
+        transaction.commit()
+        connection.close()
+        return return_id
 
 
 class DBInterface(AbstractDBInterface):
@@ -771,7 +780,7 @@ class DBInterface(AbstractDBInterface):
         try:
             type_ = slots['descriptor']
         except KeyError:
-            rospy.logfatal('Getter service has no "descriptor" field in its' +
+            rospy.logfatal('Getter service has no "descriptor" field in its ' +
                            'reponse')
             return
 
@@ -837,7 +846,7 @@ def cleartext_interface_factory(interface_name, getter_srv_msg, setter_srv_msg):
         getter_srv_msg = getter_srv_msg[:-4]
     if setter_srv_msg.endswith('.srv'):
         setter_srv_msg = setter_srv_msg[:-4]
-    iface = DBInterface(g_engine_name, interface_name,
+    iface = DBInterface(_engine_name, interface_name,
                         getter_srv_msg, setter_srv_msg,
                         start=True)
     return iface

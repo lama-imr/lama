@@ -7,7 +7,7 @@ import rospy
 import roslib.message
 
 # Table name for type description
-g_interfaces_table_name = 'map_interfaces'
+_interfaces_table_name = 'map_interfaces'
 
 
 class AbstractDBInterface(object):
@@ -116,7 +116,7 @@ class AbstractDBInterface(object):
         interface_type, timestamp_secs, timestamp_nsecs). If the
         table already exists, it will be returned.
         """
-        table = sqlalchemy.Table(g_interfaces_table_name,
+        table = sqlalchemy.Table(_interfaces_table_name,
                                  self.metadata,
                                  sqlalchemy.Column('interface_name',
                                                    sqlalchemy.String,
@@ -220,7 +220,7 @@ class AbstractDBInterface(object):
         update = table.update().where(table.c.interface_name == name)
         connection = self.engine.connect()
         transaction = connection.begin()
-        connection.execute(table.update(), update_args)
+        connection.execute(update, update_args)
         transaction.commit()
         connection.close()
 
