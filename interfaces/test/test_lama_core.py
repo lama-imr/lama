@@ -10,6 +10,9 @@ from lama_interfaces.msg import *
 from lama_interfaces.srv import *
 
 v1_id = -1
+v2_id = -1
+v3_id = -1
+v3_id = -1
 vertex1 = LamaObject()
 vertex1.id_in_world = 1
 vertex1.name = "vertex1"
@@ -35,6 +38,25 @@ vertex3b.id_in_world = 3
 vertex3b.name = "vertex3b"
 vertex3b.type=LamaObject.VERTEX
 
+e1_id = -1
+e2_id = -1
+e3_id = -1
+edge1 = LamaObject()
+edge1.id_in_world = 1
+edge1.name = "edge1"
+edge1.type = LamaObject.EDGE
+
+edge2 = LamaObject()
+edge2.id_in_world = 2
+edge2.name = "edge2"
+edge2.type = LamaObject.EDGE
+
+edge3 = LamaObject()
+edge3.id_in_world = 3
+edge3.name = "edge3"
+edge3.type = LamaObject.EDGE
+
+
 
 
 
@@ -58,11 +80,15 @@ class TestBareBones(unittest.TestCase):
         
         try:
             response = map_agent(object=vertex2, action=ActOnMapRequest.PUSH_VERTEX)
+            global v2_id 
+            v2_id = response.objects[0].id
         except rospy.ServiceException as exc:
             self.assertTrue(False,"service did not process request vertex2: " + str(exc))
 
         try:
             response = map_agent(object=vertex3, action=ActOnMapRequest.PUSH_VERTEX)
+            global v3_id 
+            v3_id = response.objects[0].id
         except rospy.ServiceException as exc:
             self.assertTrue(False,"service did not process request vertex3: " + str(exc))
 
@@ -87,6 +113,7 @@ class TestBareBones(unittest.TestCase):
         response=map_agent(object=req, action=ActOnMapRequest.PULL_VERTEX)
         self.assertEquals(response.objects[0].id_in_world, vertex1.id_in_world, "id_in_world is not equal")
         self.assertEquals(response.objects[0].name, vertex1.name, "name is not equal") 
+    
     def test004_pull_vertex_id_in_world(self):
         """Test ActOnMap service pull vertex according world id: """
         rospy.wait_for_service('lama_map_agent')
@@ -96,6 +123,7 @@ class TestBareBones(unittest.TestCase):
         response=map_agent(object=req, action=ActOnMapRequest.PULL_VERTEX)
         self.assertEquals(response.objects[0].id_in_world, vertex1.id_in_world, "id_in_world is not equal")
         self.assertEquals(response.objects[0].name, vertex1.name, "name is not equal") 
+    
     def test005_pull_vertex_name(self):
         """Test ActOnMap service pull vertex according world id: """
         rospy.wait_for_service('lama_map_agent')
@@ -105,6 +133,88 @@ class TestBareBones(unittest.TestCase):
         response=map_agent(object=req, action=ActOnMapRequest.PULL_VERTEX)
         self.assertEquals(response.objects[0].id_in_world, vertex1.id_in_world, "id_in_world is not equal")
         self.assertEquals(response.objects[0].name, vertex1.name, "name is not equal") 
+
+    def test006_pull_vertex_name_multi(self):
+        """Test ActOnMap service pull vertex according world id: """
+        rospy.wait_for_service('lama_map_agent')
+        map_agent = rospy.ServiceProxy('lama_map_agent', ActOnMap )
+        req = LamaObject()
+        req.name = "vertex3"
+        response=map_agent(object=req, action=ActOnMapRequest.PULL_VERTEX)
+        self.assertEquals(response.objects[0].name, vertex3.name, "name is not equal") 
+        self.assertEquals(response.objects[1].name, vertex3a.name, "name is not equal") 
+
+    def test007_push_edge(self):
+        """Test ActOnMap service push edge """
+        rospy.wait_for_service('lama_map_agent')
+        map_agent = rospy.ServiceProxy('lama_map_agent', ActOnMap )
+        edge1.refereces[0] = v1_id
+        edge1.refereces[1] = v2_id
+        try:
+            response = map_agent(object=edge1, action=ActOnMapRequest.PUSH_EDGE)
+            global e1_id 
+            e1_id = response.objects[0].id
+        except rospy.ServiceException as exc:
+            self.assertTrue(False,"service did not process request: " + str(exc))
+
+        edge2.refereces[0] = v2_id
+        edge2.refereces[1] = v3_id
+        try:
+            response = map_agent(object=edge2, action=ActOnMapRequest.PUSH_EDGE)
+            global e2_id 
+            e2_id = response.objects[0].id
+        except rospy.ServiceException as exc:
+            self.assertTrue(False,"service did not process request: " + str(exc))
+ 
+        edge3.refereces[0] = v2_id
+        try:
+            response = map_agent(object=edge3, action=ActOnMapRequest.PUSH_EDGE)
+            global e3_id 
+            e3_id = response.objects[0].id
+        except rospy.ServiceException as exc:
+            self.assertTrue(False,"service did not process request: " + str(exc))
+
+    def test008_pull_edge(self):
+        """Test ActOnMap service pull edge """
+        rospy.wait_for_service('lama_map_agent')
+        map_agent = rospy.ServiceProxy('lama_map_agent', ActOnMap )
+        req = LamaObject()
+        req.id = e1_id
+        response=map_agent(object=req, action=ActOnMapRequest.PULL_EDGE)
+        self.assertEquals(response.objects[0].id_in_world, edge1.id_in_world, "id_in_world is not equal")
+        self.assertEquals(response.objects[0].name, edge1.name, "name is not equal") 
+
+    def test009_pull_edge_id_in_world(self):
+        """test ActOnMap service pull edge according id in world"""
+        rospy.wait_for_service('lama_map_agent')
+        map_agent = rospy.ServiceProxy('lama_map_agent', ActOnMap)
+        req = LamaObject()
+        req.id_in_world = 1 
+        response = map_agent(object=req, action=ActOnMapRequest.PULL_EDGE)
+        self.assertEquals(response.objects[0].id_in_world, edge1.id_in_world, "id_in_world is not equal")
+        self.assertEquals(response.objects[0].name, edge1.name, "name is not equal")
+
+    def test010_pull_edge_name(self):
+        """ test ActOnMap service pull edge according name"""
+        rospy.wait_for_service('lama_map_agent')
+        map_agent = rospy.ServiceProxy('lama_map_agent', ActOnMap)
+        req = LamaObject()
+        req.name = edge1.name
+        response = map_agent(object=req, action=ActOnMapRequest.PULL_EDGE)
+        self.assertEquals(response.objects[0].id_in_world, edge1.id_in_world, "id_in_world is not equal")
+        self.assertEquals(response.objects[0].name, edge1.name, "name is not equal")
+
+    def test011_pull_edge_vertices(self):
+        """test ActOnMap service pull edge according vertices"""
+        rospy.wait_for_service('lama_map_agent')
+        map_agent = rospy.ServiceProxy('lama_map_agent', ActOnMap)
+        req = LamaObject()
+        req.refereces[0] = edge1.refereces[0]
+        req.refereces[1] = edge1.refereces[1]
+        response = map_agent(object=req, action=ActOnMapRequest.PULL_EDGE)
+        self.assertEquals(response.objects[0].id_in_world, edge1.id_in_world, "id_in_world is not equal")
+        self.assertEquals(response.objects[0].name, edge1.name, "name is not equal")
+
 
 
 
