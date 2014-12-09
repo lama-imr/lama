@@ -29,18 +29,17 @@
 
 #include <sensor_msgs/LaserScan.h>
 
-#include <lama_jockeys/navigating_jockey.h>
-#include <lama_msgs/crossing_visualization.h>
-#include <goto_crossing/crossing_goer.h>
 #include <crossing_detector/laser_crossing_detector.h>
+#include <goto_crossing/crossing_goer.h>
+#include <lama_common/crossing_visualization.h>
+#include <lama_jockeys/navigating_jockey.h>
 #include <nj_oa_laser/twist_handler.h>
 
 #include <nj_laser/visualization.h>
 
-namespace lama {
 namespace nj_laser {
 
-class Jockey : public NavigatingJockey
+class Jockey : public lama_jockeys::NavigatingJockey
 {
   public:
 
@@ -76,7 +75,6 @@ class Jockey : public NavigatingJockey
 };
 
 } // namespace nj_laser
-} // namespace lama
 
 #endif // _NJ_LASER_JOCKEY_H_
 

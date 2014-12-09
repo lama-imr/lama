@@ -23,7 +23,6 @@
 #include <featurenav_base/Segment.h>
 #include <featurenav_base/SetSegment.h>
 
-namespace lama {
 namespace featurenav_base {
 
 using std::vector;
@@ -31,7 +30,7 @@ using cv::Mat;
 using cv::KeyPoint;
 using cv::DMatch;
 
-class AJockey : public LearningJockey
+class AJockey : public lama_jockeys::LearningJockey
 {
   public:
 
@@ -106,12 +105,11 @@ class AJockey : public LearningJockey
     bool has_odom_;
     bool image_processing_running_;  //!> true when treating an image.
     geometry_msgs::Pose start_pose_;  //!> Pose when learning started.
-    ::featurenav_base::Segment segment_;
+    Segment segment_;
     std::vector<PotentialLandmark> landmarks_; //!> Potential landmarks (features seen once).
 };
 
 } // namespace featurenav_base
-} // namespace lama
 
 #endif // FEATURENAV_BASE_AJOCKEY_H
 

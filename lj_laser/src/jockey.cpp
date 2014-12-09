@@ -1,6 +1,5 @@
 #include <lj_laser/jockey.h>
 
-namespace lama {
 namespace lj_laser {
 
 Jockey::Jockey(std::string name, const double frontier_width, const double max_frontier_angle) :
@@ -185,7 +184,7 @@ void Jockey::onGetDissimilarity()
   getData();
 
   // Transform the scan into a polygon.
-  geometry_msgs::Polygon current_polygon = scanToPolygon(scan_);
+  geometry_msgs::Polygon current_polygon = lama_common::scanToPolygon(scan_);
 
   // Get all scans from database.
   lama_interfaces::ActOnMap srv;
@@ -234,7 +233,7 @@ void Jockey::onGetDissimilarity()
       server_.setAborted();
       return;
     }
-    geometry_msgs::Polygon polygon = scanToPolygon(scan_srv.response.descriptor[0]);
+    geometry_msgs::Polygon polygon = lama_common::scanToPolygon(scan_srv.response.descriptor[0]);
     vertices.push_back(desc_srv.request.object.id);
     polygons.push_back(polygon);
   }
@@ -284,4 +283,3 @@ lama_interfaces::DescriptorLink Jockey::crossingDescriptorLink(const int32_t id)
 }
 
 } // namespace lj_laser
-} // namespace lama

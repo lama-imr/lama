@@ -6,14 +6,11 @@
 #include <featurenav_base/Feature.h>
 #include <featurenav_base/Landmark.h>
 
-namespace lama
-{
 namespace featurenav_base
 {
 
-using ::featurenav_base::Feature;
-using ::featurenav_base::Landmark;
-
+/* A struct containng a ::featurenav_base::Landmark with extra information
+ */
 struct PotentialLandmark
 {
   PotentialLandmark(const Feature& descriptor, const ros::Time time, const double x, const double y, const double d) :
@@ -33,6 +30,5 @@ struct PotentialLandmark
 };
   
 } /* namespace featurenav_base */ 
-} /* namespace lama */ 
 
 #endif // FEATURENAV_BASE_POTENTIAL_LANDMARK_H

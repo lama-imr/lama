@@ -1,10 +1,9 @@
 #include <nj_laser/jockey.h>
 
-namespace lama {
 namespace nj_laser {
 
 Jockey::Jockey(const std::string& name, const double frontier_width) :
-  NavigatingJockey(name),
+  lama_jockeys::NavigatingJockey(name),
   has_crossing_(false),
   crossing_detector_(frontier_width),
   obstacle_avoider_(frontier_width / 2)
@@ -108,21 +107,21 @@ void Jockey::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
   // Visualization: a sphere at detected crossing center
   if (pub_crossing_marker_.getNumSubscribers())
   {
-    visualization_msgs::Marker m = getCrossingCenterMarker(msg->header.frame_id, crossing_);
+    visualization_msgs::Marker m = lama_common::getCrossingCenterMarker(msg->header.frame_id, crossing_);
     pub_crossing_marker_.publish(m);
   }
 
   // Visualization: a line at each detected road
   if (pub_exits_marker_.getNumSubscribers())
   {
-    visualization_msgs::Marker m = getFrontiersMarker(msg->header.frame_id, crossing_);
+    visualization_msgs::Marker m = lama_common::getFrontiersMarker(msg->header.frame_id, crossing_);
     pub_exits_marker_.publish(m);
   }
 
   // PlaceProfile visualization message.
   if (pub_place_profile_.getNumSubscribers())
   {
-    sensor_msgs::PointCloud cloud = placeProfileToPointCloud(crossing_detector_.getPlaceProfile());
+    sensor_msgs::PointCloud cloud = lama_common::placeProfileToPointCloud(crossing_detector_.getPlaceProfile());
     pub_place_profile_.publish(cloud);
   }
 
@@ -130,5 +129,4 @@ void Jockey::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
 }
 
 } // namespace nj_laser
-} // namespace lama
 

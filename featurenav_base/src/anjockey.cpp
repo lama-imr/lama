@@ -1,6 +1,5 @@
 #include <featurenav_base/anjockey.h>
 
-namespace lama {
 namespace featurenav_base {
 
 ANJockey::ANJockey(const std::string& name, const std::string& segment_interface_name) :
@@ -100,6 +99,5 @@ void ANJockey::startDo(const action_type action)
 }
 
 } // namespace featurenav_base
-} // namespace lama
 
 

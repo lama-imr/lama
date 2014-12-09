@@ -36,7 +36,7 @@ int main(int argc, char **argv)
   default_jockey_name += "_server";
 	private_nh.param<std::string>("navigating_jockey_server_name", navigating_jockey_name, default_jockey_name);
 
-  lama::nj_laser::Jockey jockey(navigating_jockey_name, frontier_width);
+  nj_laser::Jockey jockey(navigating_jockey_name, frontier_width);
 
   ROS_INFO("%s started (with server %s)", ros::this_node::getName().c_str(), jockey.getName().c_str());
   ros::spin();

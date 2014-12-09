@@ -25,17 +25,15 @@
 #include <featurenav_base/GetSegment.h>
 #include <featurenav_base/Landmark.h>
 
-namespace lama {
 namespace featurenav_base {
 
-using ::featurenav_base::Landmark;
 using boost::accumulators::tag::density;
 
 // Histogram with pixel distance as x-axis and density as y-axis.
 typedef boost::iterator_range<vector<std::pair<double, double> >::iterator> histogram_type;
 typedef boost::accumulators::accumulator_set<double, boost::accumulators::stats<density> > accumulator_type;
 
-class NJockey : public NavigatingJockey
+class NJockey : public lama_jockeys::NavigatingJockey
 {
   public:
 
@@ -118,7 +116,6 @@ class NJockey : public NavigatingJockey
 };
 
 } // namespace featurenav_base
-} // namespace lama
 
 #endif // FEATURENAV_BASE_NJOCKEY_H
 

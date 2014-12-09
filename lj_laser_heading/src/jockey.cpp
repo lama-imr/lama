@@ -1,6 +1,5 @@
 #include <lj_laser_heading/jockey.h>
 
-namespace lama {
 namespace lj_laser_heading {
 
 // Maximum time interval between reception of LaserScan and heading (either as
@@ -106,4 +105,3 @@ void Jockey::handleOdom(const nav_msgs::OdometryConstPtr& msg)
 }
 
 } // namespace lj_laser_heading
-} // namespace lama

@@ -2,7 +2,6 @@
 
 #include <nj_laser/visualization.h>
 
-namespace lama {
 namespace nj_laser {
 
 /* Return the marker for the visualization of the crossing center
@@ -54,5 +53,4 @@ visualization_msgs::Marker exitsMarker(const std::string& frame_id, const double
 }
 
 } // namespace nj_laser
-} // namespace lama
 

@@ -12,7 +12,6 @@
 
 #include <featurenav_base/Feature.h>
 
-namespace lama {
 namespace featurenav_base {
 
 using std::vector;
@@ -31,6 +30,5 @@ typedef boost::function<bool(const action_type)> can_do_function_ptr;
 typedef boost::function<void(const action_type)> start_do_function_ptr;
 
 } // namespace featurenav_base
-} // namespace lama
 
 #endif // FEATURENAV_BASE_TYPEDEF_H

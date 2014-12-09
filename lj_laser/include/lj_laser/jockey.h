@@ -53,10 +53,9 @@
 
 #include <crossing_detector/laser_crossing_detector.h>
 
-namespace lama {
 namespace lj_laser {
 
-class Jockey : public LocalizingJockey
+class Jockey : public lama_jockeys::LocalizingJockey
 {
   public:
 
@@ -107,6 +106,5 @@ class Jockey : public LocalizingJockey
 
 
 } // namespace lj_laser
-} // namespace lama
 
 #endif // _LJ_LASER_JOCKEY_H_

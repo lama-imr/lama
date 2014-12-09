@@ -1,6 +1,5 @@
 #include <nj_oa_laser/twist_handler.h>
 
-namespace lama {
 namespace nj_oa_laser {
 
 TwistHandler::TwistHandler(const double robot_radius) :
@@ -84,5 +83,4 @@ geometry_msgs::Twist TwistHandler::getTwist(const sensor_msgs::LaserScan& scan)
 }
 
 } // namespace nj_laser
-} // namespace lama
 

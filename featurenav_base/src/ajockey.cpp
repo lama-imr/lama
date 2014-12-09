@@ -1,6 +1,5 @@
 #include <featurenav_base/ajockey.h>
 
-namespace lama {
 namespace featurenav_base {
 
 const ros::Duration AJockey::max_odom_age_ = ros::Duration(0.5);
@@ -348,7 +347,4 @@ size_t AJockey::processImage(const sensor_msgs::ImageConstPtr& image)
 }
 
 } // namespace featurenav_base
-} // namespace lama
-
-
 

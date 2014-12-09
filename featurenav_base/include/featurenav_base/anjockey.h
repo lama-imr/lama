@@ -1,5 +1,5 @@
-#ifndef FEATURENAV_BASE_FEATURE_BASE_H
-#define FEATURENAV_BASE_FEATURE_BASE_H
+#ifndef FEATURENAV_BASE_ANJOCKEY_H
+#define FEATURENAV_BASE_ANJOCKEY_H
 
 #include <boost/smart_ptr.hpp>
 
@@ -12,7 +12,6 @@
 #include <featurenav_base/ajockey.h>
 #include <featurenav_base/njockey.h>
 
-namespace lama {
 namespace featurenav_base {
 
 class ANJockey
@@ -48,6 +47,5 @@ class ANJockey
 };
 
 } // namespace featurenav_base
-} // namespace lama
 
-#endif // FEATURENAV_BASE_FEATURE_BASE_H
+#endif /* FEATURENAV_BASE_ANJOCKEY_H */

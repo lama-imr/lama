@@ -8,7 +8,6 @@
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/LaserScan.h>
 
-namespace lama {
 namespace nj_oa_laser {
 
 class TwistHandler
@@ -30,7 +29,6 @@ class TwistHandler
 };
 
 } // namespace nj_oa_laser
-} // namespace lama
 
 #endif // NJ_OA_LASER_TWIST_HANDLER_H
 

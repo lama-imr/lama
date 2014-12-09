@@ -116,7 +116,7 @@ Jockey::Jockey(const std::string& name) :
   }
   
   map_interface_name_ = base_name_ + "_" + feature_detector_code_ + "_" + descriptor_extractor_code_;
-  anjockey_ptr_.reset(new lama::featurenav_base::ANJockey(base_name_, map_interface_name_));
+  anjockey_ptr_.reset(new featurenav_base::ANJockey(base_name_, map_interface_name_));
   anjockey_ptr_->setExtractFeaturesFunction(boost::bind(&Jockey::extractFeatures, this, _1, _2, _3));
   anjockey_ptr_->setDescriptorMatcherFunction(boost::bind(&Jockey::matchDescriptors, this, _1, _2, _3));
 }

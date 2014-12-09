@@ -1,10 +1,9 @@
 #include <nj_oa_laser/jockey.h>
 
-namespace lama {
 namespace nj_oa_laser {
 
 Jockey::Jockey(const std::string& name, const double robot_radius) :
-  NavigatingJockey(name),
+  lama_jockeys::NavigatingJockey(name),
   twist_handler_(robot_radius)
 {
   initTwistHandlerParam(twist_handler_);
@@ -109,4 +108,3 @@ void Jockey::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
 }
 
 } // namespace nj_oa_laser
-} // namespace lama

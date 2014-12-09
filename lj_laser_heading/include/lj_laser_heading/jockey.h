@@ -36,7 +36,6 @@
 
 #include <lj_laser/jockey.h>
 
-namespace lama {
 namespace lj_laser_heading {
 
 class Jockey : public lj_laser::Jockey
@@ -67,6 +66,5 @@ class Jockey : public lj_laser::Jockey
 };
 
 } // namespace lj_laser_heading
-} // namespace lama
 
 #endif // _LJ_LASER_HEADING_JOCKEY_H_

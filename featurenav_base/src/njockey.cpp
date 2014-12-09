@@ -1,6 +1,5 @@
 #include <featurenav_base/njockey.h>
 
-namespace lama {
 namespace featurenav_base {
 
 const ros::Duration NJockey::max_odom_age_ = ros::Duration(0.5);
@@ -8,7 +7,7 @@ const double NJockey::reach_angular_distance_ = 0.001;  // (rad)
 const int NJockey::histogram_bin_size_ = 20;
 
 NJockey::NJockey(const std::string& name, const std::string& segment_interface_name, const std::string& segment_getter_name) :
-  NavigatingJockey(name),
+  lama_jockeys::NavigatingJockey(name),
   it_(private_nh_),
   forward_velocity_(0.050),
   matcher_max_relative_distance_(0.8),
@@ -379,6 +378,5 @@ vector<double> NJockey::compute_horizontal_differences(const vector<Landmark>& l
 }
 
 } // namespace featurenav_base
-} // namespace lama
 
 

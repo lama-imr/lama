@@ -59,7 +59,7 @@ class Jockey
     // Internals.
     ros::NodeHandle private_nh_;
     std::string base_name_;  //!> The base name for learning and navigating jockeys.
-    boost::scoped_ptr<lama::featurenav_base::ANJockey> anjockey_ptr_;
+    boost::scoped_ptr<featurenav_base::ANJockey> anjockey_ptr_;
     boost::scoped_ptr<cv::FeatureDetector> feature_detector_;
     boost::scoped_ptr<cv::DescriptorExtractor> descriptor_extractor_;
     boost::scoped_ptr<cv::DescriptorMatcher> descriptor_matcher_;

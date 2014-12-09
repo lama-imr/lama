@@ -34,7 +34,7 @@ int main(int argc, char **argv)
   double frontier_width;
   nh.param<double>("frontier_width", frontier_width, 0.0);
 
-  lama::lj_laser::Jockey jockey(localizing_jockey_server, frontier_width);
+  lj_laser::Jockey jockey(localizing_jockey_server, frontier_width);
 
   ROS_INFO("%s started (with action server %s)", ros::this_node::getName().c_str(), jockey.getName().c_str());
   ros::spin();
