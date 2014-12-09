@@ -12,6 +12,7 @@
 #include <image_transport/image_transport.h>
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 
 #include <lama_jockeys/learning_jockey.h>
@@ -36,16 +37,21 @@ class AJockey : public LearningJockey
 
     AJockey(const std::string& name, const std::string& segment_interface_name, const std::string& segment_setter_name);
 
-    can_do_function_ptr canDo;
-    start_do_function_ptr startDo;
-
     void setExtractFeaturesFunction(feature_extractor_function_ptr f) {extract_features_ = f;}
     void setDescriptorMatcherFunction(descriptor_matcher_function_ptr f) {match_descriptors_ = f;}
 
+    can_do_function_ptr canDo;
+    start_do_function_ptr startDo;
+
   private:
 
+    virtual void onStartLearn();
+    virtual void onStopLearn();
+    virtual void onInterrupt();
+    virtual void onContinue();
+
     void reset();
-    size_t processImage(const sensor_msgs::ImageConstPtr& image, const double d);
+    size_t processImage(const sensor_msgs::ImageConstPtr& image);
 
     /* Return the distance since we started learning.
      */
@@ -70,11 +76,6 @@ class AJockey : public LearningJockey
       return descriptor_link;
     }
 
-    virtual void onStartLearn();
-    virtual void onStopLearn();
-    virtual void onInterrupt();
-    virtual void onContinue();
-
     void callback_image(const sensor_msgs::ImageConstPtr& msg);
     void callback_odom(const nav_msgs::OdometryConstPtr& msg);
 
@@ -86,10 +87,14 @@ class AJockey : public LearningJockey
     // Client proxies.
     ros::ServiceClient segment_setter_proxy_;
 
+    // ROS parameters, shown outside.
+    double matcher_max_relative_distance_;  //!> A potential descriptor is visible in the new image if
+                                            //!> the distance to the best-match descriptor is smaller than
+                                            //!> the distance to the second best match multiplied by this factor.
+    double min_landmark_dist_;  //!> A landmark is saved if it was visible on at least such a traveled distance.
+
     // Hard-coded parameters.
     static const ros::Duration max_odom_age_;
-    static const double matcher_equality_multiplication_;
-    static const double min_landmark_dist_;
     static const ros::Duration max_landmark_age_;
 
     // Internals.
@@ -99,7 +104,6 @@ class AJockey : public LearningJockey
     descriptor_matcher_function_ptr match_descriptors_;
     nav_msgs::Odometry odom_;  //!> Last received odometry message.
     bool has_odom_;
-    bool learning_started_;
     bool image_processing_running_;  //!> true when treating an image.
     geometry_msgs::Pose start_pose_;  //!> Pose when learning started.
     ::featurenav_base::Segment segment_;

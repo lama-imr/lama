@@ -6,7 +6,7 @@ project(featurenav_base)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED
   COMPONENTS
-  blob
+  angles
   geometry_msgs
   image_transport
   lama_jockeys
@@ -75,7 +75,6 @@ add_service_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
-  blob
   geometry_msgs
 )
 
@@ -98,7 +97,7 @@ catkin_package(
   featurenav_base_njockey
 
   CATKIN_DEPENDS
-  blob
+  angles
   geometry_msgs
   image_transport
   lama_jockeys
@@ -121,6 +120,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -146,6 +146,7 @@ target_link_libraries(featurenav_base_ajockey
 target_link_libraries(featurenav_base_njockey
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  ${Boost_LIBRARIES}
 )
 target_link_libraries(featurenav_base_anjockey
   featurenav_base_ajockey

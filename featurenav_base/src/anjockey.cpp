@@ -23,7 +23,7 @@ ANJockey::ANJockey(const std::string& name, const std::string& segment_interface
 
   ajockey_ptr_.reset(new AJockey(name + "_learner", segment_interface_name_, segment_setter_name_));
   // TODO: add segment_getter_name_ parameter.
-  njockey_ptr_.reset(new NJockey(name + "_navigator"));
+  njockey_ptr_.reset(new NJockey(name + "_navigator", segment_interface_name_, segment_getter_name_));
 
   // Initialize the clients for the LaserScan getter and setter services (interface to map).
   ajockey_ptr_->canDo = (can_do_function_ptr) boost::bind(&ANJockey::canDo, this, _1);
