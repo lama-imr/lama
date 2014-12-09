@@ -215,6 +215,29 @@ class TestBareBones(unittest.TestCase):
         self.assertEquals(response.objects[0].id_in_world, edge1.id_in_world, "id_in_world is not equal")
         self.assertEquals(response.objects[0].name, edge1.name, "name is not equal")
 
+    def test012_pull_edge_start_vertex(self):
+        """test ActOnMap service pull edge according start vertex"""
+        ###functionality of outgoing edge??? do we need specific action??
+        rospy.wait_for_service('lama_map_agent')
+        map_agent = rospy.ServiceProxy('lama_map_agent', ActOnMap)
+        req = LamaObject()
+        req.refereces[0] = edge1.refereces[0]
+        response = map_agent(object=req, action=ActOnMapRequest.PULL_EDGE)
+        self.assertEquals(response.objects[0].id_in_world, edge1.id_in_world, "id_in_world is not equal")
+        self.assertEquals(response.objects[0].name, edge1.name, "name is not equal")
+        
+    def test013_pull_edge_stop_vertex(self):
+        """test ActOnMap service pull edge according stop vertex"""
+        ###functionality of ingoing edge??? do we need specific action??
+        rospy.wait_for_service('lama_map_agent')
+        map_agent = rospy.ServiceProxy('lama_map_agent', ActOnMap)
+        req = LamaObject()
+        req.refereces[1] = edge1.refereces[1]
+        response = map_agent(object=req, action=ActOnMapRequest.PULL_EDGE)
+        self.assertEquals(response.objects[0].id_in_world, edge1.id_in_world, "id_in_world is not equal")
+        self.assertEquals(response.objects[0].name, edge1.name, "name is not equal")
+ 
+
 
 
 
