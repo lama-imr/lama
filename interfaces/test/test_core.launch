@@ -1,4 +1,4 @@
 <launch>
-   <node pkg="lama_interfaces" type="map_node.py" name="core" />
+   <node pkg="lama_interfaces" type="map_node" name="core" />
    <test test-name="name" pkg="lama_interfaces" type="test_lama_core.py" />
 </launch>

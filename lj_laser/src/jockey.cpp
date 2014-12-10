@@ -42,7 +42,7 @@ bool Jockey::initMapLaserInterface()
   srv.request.set_service_message = "lama_interfaces/SetVectorLaserScan";
   if (!client.call(srv))
   {
-    ROS_ERROR("Failed to create the Lama interface %s", laser_interface_name_.c_str());
+    ROS_ERROR("Failed to create the LaMa interface %s", srv.request.interface_name.c_str());
     return false;
   }
   // Initialize the clients for the LaserScan getter and setter services (interface to map).

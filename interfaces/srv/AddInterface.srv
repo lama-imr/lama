@@ -1,5 +1,14 @@
+# Interface name, must be unique
 string interface_name
+
+# A srv message with request field "int32 id" and response field
+# "TYPE descriptor", where TYPE is the type of message that should be handled.
+# For example, get_service_message can be "lama_interface/GetDouble".
 string get_service_message
+
+# A srv message with request field "TYPE descriptor" and response field
+# "int32 id", where TYPE is the type of message that should be handled.
+# For example, set_service_message can be "lama_interface/SetDouble".
 string set_service_message
 
 uint32 interface_type
