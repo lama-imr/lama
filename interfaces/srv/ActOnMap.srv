@@ -3,23 +3,25 @@ uint32 action
 # Possible actions.
 # Add vertex (defined in "object").
 uint32 PUSH_VERTEX = 1 
-# Retrieve vertex (into "objects[0]") and associated descriptors (into
-# "descriptor_links").
+# Retrieve the unique vertex with id object.id (vertex into "objects[0]") and
+# associated descriptors (into "descriptor_links").
 uint32 PULL_VERTEX = 2
 # Assign descriptor (with id "descriptor_id" and interface "interface_name") to
 # vertex (defined in "object").
 uint32 ASSIGN_DESCRIPTOR_VERTEX = 3
 # Add edge (defined in "object").
 uint32 PUSH_EDGE = 4
-# Retrieve edge (into "objects[0]") and associated descriptors (into
-# "descriptor_links").
+# Retrieve the unique edge with id object.id (edge into "objects[0]") and
+# associated descriptors (into "descriptor_links").
 uint32 PULL_EDGE = 5
 # Assign descriptor (with id "descriptor_id" and interface "interface_name") to
 # edge (defined in "object")
 uint32 ASSIGN_DESCRIPTOR_EDGE = 6
-# Retrieve all vertices (into "objects").
+# Retrieve vertices with search criteria given in object (into "objects").
+# Search criteria are attributes with non-default values (0 or '').
 uint32 GET_VERTEX_LIST = 7
-# Retrieve all edges (into "objects").
+# Retrieve edges with search criteria given in object (into "objects").
+# Search criteria are attributes with non-default values (0 or '').
 uint32 GET_EDGE_LIST = 8
 # Retrieve descriptor_links from a LamaObject (defined in "object") with an
 # optionally specified interface name ("interface_name").

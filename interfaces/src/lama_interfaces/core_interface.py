@@ -15,6 +15,8 @@ import roslib.message
 
 from lama_interfaces.msg import LamaObject
 from lama_interfaces.msg import DescriptorLink
+from lama_interfaces.srv import ActOnMap
+from lama_interfaces.srv import ActOnMapRequest
 from lama_interfaces.srv import ActOnMapResponse
 
 from abstract_db_interface import AbstractDBInterface
@@ -53,6 +55,22 @@ class CoreDBInterface(AbstractDBInterface):
                                               get_srv_type, set_srv_type,
                                               start=start)
 
+        # Add the "unvisited" vertex. Edge for which the outoing vertex is not
+        # visited yet have reference[1] == unvisited_vertex.id.
+        unvisited_vertex = LamaObject()
+        unvisited_vertex.id = -1
+        unvisited_vertex.name = 'unvisited'
+        unvisited_vertex.type = LamaObject.VERTEX
+        self.set_lama_object(unvisited_vertex)
+
+        # Add the "undefined" vertex. This is to ensure that automatically
+        # generated ids (primary keys) are greater than 0.
+        undefined_vertex = LamaObject()
+        undefined_vertex.id = 0
+        undefined_vertex.name = 'undefined'
+        undefined_vertex.type = LamaObject.VERTEX
+        self.set_lama_object(undefined_vertex)
+
     @property
     def interface_type(self):
         return 'core'
@@ -60,7 +78,7 @@ class CoreDBInterface(AbstractDBInterface):
     def _check_md5sum(self):
         """Check that current implementation is compatible with LamaObject"""
         lama_object = LamaObject()
-        if lama_object._md5sum != "15d9ec1a7b5a1e0aaddf5bfcebbe61d0":
+        if lama_object._md5sum != "69b010f1880225b9ecaa8e21ae953d12":
             raise rospy.ROSException("CoreDBInterface incompatible " +
                                      "with current LamaObject implementation")
 
@@ -180,15 +198,99 @@ class CoreDBInterface(AbstractDBInterface):
 
         return lama_object
 
+    def set_lama_object(self, lama_object):
+        """Add/modify a lama object to the database
+
+        Return the lama object's id.
+
+        Parameter
+        ---------
+        - lama_object: an instance of LamaObject.
+        """
+        is_undefined_vertex = (lama_object.name == 'undefined')
+        is_special_vertex = lama_object.id < 0 or is_undefined_vertex
+        is_new_vertex = lama_object.id == 0 and not is_undefined_vertex
+
+        # Check id existence
+        query = self.core_table.select(
+            whereclause=(self.core_table.c.id == lama_object.id))
+        connection = self.engine.connect()
+        with connection.begin():
+            result = connection.execute(query).fetchone()
+        connection.close()
+
+        if result is not None and is_special_vertex:
+            # Exit if lama_object is an already-existing special object.
+            return lama_object.id
+
+        # Possibly delete any node with the same id.
+        if result is not None and not is_new_vertex:
+            self.del_lama_object(lama_object.id)
+
+        # Insert data into the core table.
+        insert_args = {
+            'id_in_world': lama_object.id_in_world,
+            'name': lama_object.name,
+            'emitter_id': lama_object.emitter_id,
+            'emitter_name': lama_object.emitter_name,
+            'type': lama_object.type,
+        }
+        if not is_new_vertex:
+            # If id is not given, i.e. if it is 0, the database will give it
+            # an id automatically (primary key).
+            insert_args['id'] = lama_object.id
+        connection = self.engine.connect()
+        transaction = connection.begin()
+        result = connection.execute(self.core_table.insert(), insert_args)
+        object_id = result.inserted_primary_key[0]
+
+        # Insert data for the 'references' array.
+        if lama_object.type == LamaObject.EDGE:
+            if len(lama_object.references) != 2:
+                transaction.rollback()
+                connection.close()
+                raise rospy.ServiceException(
+                    'edge references must have two values')
+            if 0 in lama_object.references:
+                # 0 is undefined and not allowed.
+                transaction.rollback()
+                connection.close()
+                raise rospy.ServiceException('references cannot be 0')
+            for i, v in enumerate(lama_object.references):
+                insert_args = {
+                    'seq_num': i,
+                    'parent_id': object_id,
+                    '_value_': v,
+                }
+                connection.execute(self.core_obj_ref_table.insert(),
+                                   insert_args)
+        transaction.commit()
+        connection.close()
+
+        self._set_timestamp(rospy.Time.now())
+        return object_id
+
+    def del_lama_object(self, id_):
+        """Remove a LamaObject from the database"""
+        delete = self.core_table.delete(
+            whereclause=(self.core_table.c.id == id_))
+        delete_refs = self.core_obj_ref_table.delete(
+            whereclause=(self.core_obj_ref_table.c.parent_id == id_))
+        connection = self.engine.connect()
+        transaction = connection.begin()
+        connection.execute(delete)
+        connection.execute(delete_refs)
+        transaction.commit()
+        connection.close()
+
     def _get_lama_object_references(self, id_):
         """Get the references of a LamaObject"""
         # Make the transaction for the array 'references'.
         query = self.core_obj_ref_table.select(
             whereclause=(self.core_obj_ref_table.c.parent_id == id_))
         connection = self.engine.connect()
-        transaction = connection.begin()
-        refs = connection.execute(query).fetchall()
-        transaction.commit()
+        with connection.begin():
+            refs = connection.execute(query).fetchall()
         connection.close()
         if not refs:
             return []
@@ -276,48 +378,6 @@ class CoreDBInterface(AbstractDBInterface):
             desc_links.append(desc_link)
         return desc_links
 
-    def set_lama_object(self, lama_object):
-        """Add a lama object to the database
-
-        Return the lama object's id.
-
-        Parameter
-        ---------
-        - lama_object: an instance of LamaObject.
-        """
-        # Make the transaction for the core table.
-        connection = self.engine.connect()
-        transaction = connection.begin()
-        insert_args = {
-            'id_in_world': lama_object.id_in_world,
-            'name': lama_object.name,
-            'emitter_id': lama_object.emitter_id,
-            'emitter_name': lama_object.emitter_name,
-            'type': lama_object.type,
-        }
-        result = connection.execute(self.core_table.insert(), insert_args)
-        object_id = result.inserted_primary_key[0]
-        transaction.commit()
-        connection.close()
-
-        # Make the transaction for the 'references' array.
-        if lama_object.type == LamaObject.EDGE:
-            connection = self.engine.connect()
-            transaction = connection.begin()
-            for i, v in enumerate(lama_object.references):
-                insert_args = {
-                    'seq_num': i,
-                    'parent_id': object_id,
-                    '_value_': v,
-                }
-                connection.execute(self.core_obj_ref_table.insert(),
-                                   insert_args)
-            transaction.commit()
-            connection.close()
-
-        self._set_timestamp(rospy.Time.now())
-        return object_id
-
 
 class MapAgentInterface(object):
     """Define callbacks for ActOnMap and start the map agent service"""
@@ -332,8 +392,11 @@ class MapAgentInterface(object):
             self.map_agent = rospy.Service(self.action_service_name,
                                            self.action_service_class,
                                            self.action_callback)
+            self.map_agent_proxy = rospy.ServiceProxy(self.action_service_name,
+                                                      ActOnMap)
         else:
             self.map_agent = None
+            self.map_agent_proxy = None
 
         self.core_iface = CoreDBInterface(_engine_name, start=False)
         self.engine = self.core_iface.engine
@@ -365,8 +428,12 @@ class MapAgentInterface(object):
         if msg.action not in callbacks:
             raise rospy.ServiceException('Action {} not implemented'.format(
                 msg.action))
-        r = callbacks[msg.action](msg)
-        return r
+        callback = callbacks[msg.action]
+        response = callback(msg)
+        if response.objects and not isinstance(response.objects[0].references, list): #debug
+            print 'action_callback: action: {}'.format(msg.action) # debug
+            print 'action_callback, response.objects: {}'.format(response.objects[0]) #debug
+        return response
 
     def push_lama_object(self, msg):
         """Add a LaMa object to the database
@@ -379,6 +446,12 @@ class MapAgentInterface(object):
         - msg: an instance of ActOnMap request.
         """
         lama_object = copy.copy(msg.object)
+        # Workaround a strange bug, where msg.object.references is a tuple.
+        lama_object.references = list(msg.object.references)
+        if not isinstance(lama_object.references, list): #debug
+            print 'list?: {}'.format(isinstance(msg.object.references, list))
+            print 'push_lama_object, msg_object: {}'.format(msg.object) #debug
+            print 'push_lama_object, lama_object: {}'.format(lama_object) #debug
         lama_object.id = self.core_iface.set_lama_object(lama_object)
         response = ActOnMapResponse()
         response.objects.append(lama_object)
@@ -388,8 +461,11 @@ class MapAgentInterface(object):
         """Retrieve a LaMa object from the database
 
         Callback for PULL_VERTEX and PULL_EDGE.
+        The object id is given in msg.object.id.
         Return an instance of ActOnMap response. The field descriptor_links will
         be filled with all DescriptorLink associated with this LamaObject.
+        An error is raised if more LaMa objects correspond to the search
+        criteria.
 
         Parameters
         ----------
@@ -468,32 +544,78 @@ class MapAgentInterface(object):
         response = ActOnMapResponse()
         return response
 
-    def get_lama_object_list(self, msg, object_type):
-        """Retrieve all elements of a given type from the database
+    def get_lama_object_list(self, lama_object):
+        """Retrieve all elements that match the search criteria
 
-        Return an instance of ActOnMap response.
+        Search criteria are attributes of lama_object with non-default values
+        (0 or '').
+        Return a list of LamaObject, or an empty list of no LamaObject matches.
 
         Parameters
         ----------
-        - msg: an instance of ActOnMap request.
-        - object_type: LamaObject.VERTEX or LamaObject.EDGE.
+        - lama_object: an instance of LamaObject
         """
-        # Make the transaction for the core table.
-        table = self.core_iface.core_table
-        connection = self.engine.connect()
-        transaction = connection.begin()
-        query = table.select(
-            whereclause=(table.c.type == object_type))
-        results = connection.execute(query).fetchall()
-        transaction.commit()
-        connection.close()
+        # Safeguard for malformed references.
+        if lama_object.type == LamaObject.EDGE and not lama_object.references:
+            # Workaround a strange bug, where msg.object.references is a tuple.
+            lama_object.references = list(lama_object.references)
+            lama_object.references.append(0)
+        if (lama_object.type == LamaObject.EDGE and
+            len(lama_object.references) < 2):
+            # Workaround a strange bug, where msg.object.references is a tuple.
+            lama_object.references = list(lama_object.references)
+            lama_object.references.append(0)
 
-        response = ActOnMapResponse()
-        if results:
-            for result in results:
-                lama_object = self.core_iface.get_lama_object(result['id'])
-                response.objects.append(lama_object)
-        return response
+        coretable = self.core_iface.core_table
+        reftable = self.core_iface.core_obj_ref_table
+        query = select([coretable.c.id], from_obj=[coretable, reftable])
+        query = query.where(coretable.c['id'] != 0)
+        if lama_object.id:
+            query = query.where(coretable.c['id'] == lama_object.id)
+        if lama_object.id_in_world:
+            query = query.where(
+                coretable.c['id_in_world'] == lama_object.id_in_world)
+        if lama_object.name:
+            query = query.where(coretable.c['name'] == lama_object.name)
+        if lama_object.emitter_id:
+            query = query.where(
+                coretable.c['emitter_id'] == lama_object.emitter_id)
+        if lama_object.emitter_name:
+            query = query.where(
+                coretable.c['emitter_name'] == lama_object.emitter_name)
+        if lama_object.type:
+            query = query.where(coretable.c['type'] == lama_object.type)
+        if lama_object.type == LamaObject.EDGE and lama_object.references[0]:
+            if lama_object.id:
+                query = query.where((coretable.c['id'] ==
+                                     reftable.c['parent_id']))
+            query = query.where((reftable.c['_value_'] ==
+                                 lama_object.references[0]))
+            query = query.where(reftable.c['seq_num'] == 0)
+        if lama_object.type == LamaObject.EDGE and lama_object.references[1]:
+            if lama_object.id:
+                query = query.where((coretable.c['id'] ==
+                                     reftable.c['parent_id']))
+            query = query.where((reftable.c['_value_'] ==
+                                 lama_object.references[1]))
+            query = query.where(reftable.c['seq_num'] == 1)
+        rospy.loginfo('SQL query: {}'.format(query))
+
+        connection = self.engine.connect()
+        with connection.begin():
+            results = connection.execute(query).fetchall()
+        connection.close()
+        if not results:
+            return []
+        object_ids = []
+        objects = []
+        for result in results:
+            if id in object_ids:
+                continue
+            match = self.core_iface.get_lama_object(result['id'])
+            object_ids.append(result['id'])
+            objects.append(match)
+        return objects
 
     def get_vertex_list(self, msg):
         """Retrieve all vertices from the database
@@ -505,19 +627,28 @@ class MapAgentInterface(object):
         ----------
         - msg: an instance of ActOnMap request.
         """
-        return self.get_lama_object_list(msg, LamaObject.VERTEX)
+        msg.object.type = LamaObject.VERTEX
+        response = ActOnMapResponse()
+        response.objects = self.get_lama_object_list(msg.object)
+        return response
 
     def get_edge_list(self, msg):
-        """Retrieve all edges from the database
+        """Retrieve edges from the database
 
         Callback for GET_EDGE_LIST.
+        Retrieved all edges from the database that correspond to the search
+        criteria given in msg.object.
+        Search criteria are attributes with non-default values (0 or '').
         Return an instance of ActOnMap response.
 
         Parameters
         ----------
         - msg: an instance of ActOnMap request.
         """
-        return self.get_lama_object_list(msg, LamaObject.EDGE)
+        msg.object.type = LamaObject.EDGE
+        response = ActOnMapResponse()
+        response.objects = self.get_lama_object_list(msg.object)
+        return response
 
     def get_descriptor_links(self, msg):
         """Retrieve DescriptorLink associated with a LamaObject and an interface
@@ -557,32 +688,18 @@ class MapAgentInterface(object):
         Callback for GET_OUTGOING_EDGES.
         Return an instance of ActOnMap response containing edges (instances
         of LamaObject) starting at the given vertex.
+        This is syntactic sugar because the functionality can be obtained with
+        GET_EDGE_LIST.
 
         Parameters
         ----------
-        - msg: an instance of ActOnMap request.
+        - msg: an instance of ActOnMapRequest.
         """
-        coretable = self.core_iface.core_table
-        reftable = self.core_iface.core_obj_ref_table
-        query = select([coretable.c.id], from_obj=[coretable, reftable])
-        query = query.where(reftable.c['_value_'] == msg.object.id)
-        query = query.where(reftable.c['seq_num'] == 0)
-        query = query.where(coretable.c['id'] == reftable.c['parent_id'])
-
-        connection = self.engine.connect()
-        transaction = connection.begin()
-        results = connection.execute(query).fetchall()
-        transaction.commit()
-        connection.close()
-        if not results:
-            err = 'No lama object with id {} in database table {}'.format(
-                msg.object.id, coretable.name)
-            raise rospy.ServiceException(err)
-        response = ActOnMapResponse()
-        for result in results:
-            edge = self.core_iface.get_lama_object(result['id'])
-            response.objects.append(edge)
-        return response
+        msg_get_edges = ActOnMapRequest()
+        msg_get_edges.object.type = msg_get_edges.object.EDGE
+        msg_get_edges.object.references.append(msg.object.id)
+        msg_get_edges.object.references.append(0)
+        return self.get_edge_list(msg_get_edges)
 
 
 def core_interface():

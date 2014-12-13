@@ -14,8 +14,8 @@ string emitter_name
 
 # type: "EDGE" or "VERTEX"
 int32 type
-int32 VERTEX = 0
-int32 EDGE = 1
+int32 VERTEX = 1
+int32 EDGE = 2
 
 # for edges: start and end vertices
 # for vertices: not used
