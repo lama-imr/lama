@@ -1,3 +1,6 @@
+# Create an interface to the LaMa database, where values are saved in
+# binary form.
+
 from StringIO import StringIO
 
 import rospy

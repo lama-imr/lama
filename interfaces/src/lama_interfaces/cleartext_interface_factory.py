@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+# Create an interface to the LaMa database, where values are saved in
+# clear text.
 
 from __future__ import print_function
 

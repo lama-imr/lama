@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# Unit tests for core_interface.py
 
 import rospy
 

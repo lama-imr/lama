@@ -1,4 +1,4 @@
-#!/usr/bin/python
+# Functionalities to convert the map into Python objects.
 
 import rospy
 

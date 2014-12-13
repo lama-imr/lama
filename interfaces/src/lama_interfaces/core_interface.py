@@ -78,9 +78,9 @@ class CoreDBInterface(AbstractDBInterface):
     def _check_md5sum(self):
         """Check that current implementation is compatible with LamaObject"""
         lama_object = LamaObject()
-        if lama_object._md5sum != "69b010f1880225b9ecaa8e21ae953d12":
-            raise rospy.ROSException("CoreDBInterface incompatible " +
-                                     "with current LamaObject implementation")
+        if lama_object._md5sum != '69b010f1880225b9ecaa8e21ae953d12':
+            raise rospy.ROSException('CoreDBInterface incompatible ' +
+                                     'with current LamaObject implementation')
 
     def _generate_schema(self):
         """Create the SQL tables"""
