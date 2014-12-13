@@ -36,19 +36,16 @@ edge1 = LamaObject()
 edge1.id_in_world = 101
 edge1.name = 'edge1'
 edge1.type = LamaObject.EDGE
-edge1.references = [0] * 2
 
 edge2 = LamaObject()
 edge2.id_in_world = 102
 edge2.name = 'edge2'
 edge2.type = LamaObject.EDGE
-edge2.references = [0] * 2
 
 edge3 = LamaObject()
 edge3.id_in_world = 103
 edge3.name = 'edge3'
 edge3.type = LamaObject.EDGE
-edge3.references = [0] * 2
 
 
 class TestCoreInterface(unittest.TestCase):
@@ -257,11 +254,6 @@ class TestCoreInterface(unittest.TestCase):
         response.objects[0].references = list(response.objects[0].references)
         self.assertObjectEqual(response.objects[0], edge2)
 
-        edge3.references = [vertex2.id]
-        self.assertRaises(rospy.ServiceException,
-                          self.map_agent,
-                          object=edge3, action=ActOnMapRequest.PUSH_EDGE)
-
         edge3.references = [vertex2.id, 0]
         self.assertRaises(rospy.ServiceException,
                           self.map_agent,
@@ -319,8 +311,8 @@ class TestCoreInterface(unittest.TestCase):
     def test003_pull_edge_vertices(self):
         """test ActOnMap service GET_EDGE_LIST according to both vertices"""
         req = LamaObject()
-        req.references.append(edge1.references[0])
-        req.references.append(edge1.references[1])
+        req.references[0] = edge1.references[0]
+        req.references[1] = edge1.references[1]
         response = self.map_agent(object=req,
                                   action=ActOnMapRequest.GET_EDGE_LIST)
         self.assertNonEmpty(response.objects)
@@ -334,8 +326,7 @@ class TestCoreInterface(unittest.TestCase):
         """test ActOnMap service GET_EDGE_LIST according to start vertex"""
         req = LamaObject()
         req.type = LamaObject.EDGE
-        req.references.append(edge1.references[0])
-        req.references.append(0)
+        req.references[0] = edge1.references[0]
         response = self.map_agent(object=req,
                                   action=ActOnMapRequest.GET_EDGE_LIST)
         self.assertNonEmpty(response.objects)
@@ -348,7 +339,7 @@ class TestCoreInterface(unittest.TestCase):
     def test003_get_outgoing_edges(self):
         """test ActOnMap service GET_OUTGOING_EDGES"""
         req = LamaObject()
-        req.id = vertex1.id
+        req.id = edge1.references[0]
         response = self.map_agent(object=req,
                                   action=ActOnMapRequest.GET_OUTGOING_EDGES)
         self.assertNonEmpty(response.objects)
@@ -361,8 +352,7 @@ class TestCoreInterface(unittest.TestCase):
     def test003_pull_edge_stop_vertex(self):
         """test ActOnMap service GET_EDGE_LIST according to stop vertex"""
         req = LamaObject()
-        req.references.append(0)
-        req.references.append(edge1.references[1])
+        req.references[1] = edge1.references[1]
         response = self.map_agent(object=req,
                                   action=ActOnMapRequest.GET_EDGE_LIST)
         self.assertNonEmpty(response.objects)

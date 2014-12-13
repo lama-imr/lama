@@ -19,5 +19,5 @@ int32 EDGE = 2
 
 # for edges: start and end vertices
 # for vertices: not used
-int32[] references
+int32[2] references
 

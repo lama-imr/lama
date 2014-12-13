@@ -3,7 +3,6 @@
 
 import copy
 
-from sqlalchemy import select
 from sqlalchemy import ForeignKey
 from sqlalchemy import Table
 from sqlalchemy import Column
@@ -43,6 +42,8 @@ class CoreDBInterface(AbstractDBInterface):
             messages. Defaults to 'lama_descriptor_links'.
         """
         self._check_md5sum()
+        self.direct_attributes = ['id', 'id_in_world', 'name', 'emitter_id',
+                                  'emitter_name', 'type']
         if not interface_name:
             interface_name = _default_core_table_name
         if not descriptor_table_name:
@@ -78,7 +79,7 @@ class CoreDBInterface(AbstractDBInterface):
     def _check_md5sum(self):
         """Check that current implementation is compatible with LamaObject"""
         lama_object = LamaObject()
-        if lama_object._md5sum != '69b010f1880225b9ecaa8e21ae953d12':
+        if lama_object._md5sum != 'e2747a1741c10b06140b9673d9018102':
             raise rospy.ROSException('CoreDBInterface incompatible ' +
                                      'with current LamaObject implementation')
 
@@ -102,16 +103,9 @@ class CoreDBInterface(AbstractDBInterface):
         table.append_column(Column('emitter_id', types.Integer))
         table.append_column(Column('emitter_name', types.String))
         table.append_column(Column('type', types.Integer))
+        table.append_column(Column('v0', types.Integer))
+        table.append_column(Column('v1', types.Integer))
         self.core_table = table
-
-        table = Table(self.interface_name + '@references@_data_',
-                      self.metadata)
-        table.append_column(Column('id', types.Integer, primary_key=True))
-        table.append_column(Column('seq_num', types.Integer))
-        table.append_column(Column('parent_id', types.Integer,
-                                   ForeignKey(self.interface_name + '.id')))
-        table.append_column(Column('_value_', types.Integer))
-        self.core_obj_ref_table = table
 
     def _generate_descriptor_table(self):
         """Create the SQL tables for descriptor_links"""
@@ -129,6 +123,14 @@ class CoreDBInterface(AbstractDBInterface):
         # TODO: add a uniqueness constraint on (object_id, descriptor_id,
         # interface_name)
         self.descriptor_table = table
+
+    def _lama_object_from_result(self, result):
+        lama_object = LamaObject()
+        for attr in self.direct_attributes:
+            setattr(lama_object, attr, result[attr])
+        lama_object.references[0] = result['v0']
+        lama_object.references[1] = result['v1']
+        return lama_object
 
     def getter_callback(self, msg):
         """Get a LamaObject from the database
@@ -174,29 +176,15 @@ class CoreDBInterface(AbstractDBInterface):
         query = self.core_table.select(
             whereclause=(self.core_table.c.id == id_))
         connection = self.engine.connect()
-        transaction = connection.begin()
-        result = connection.execute(query).fetchone()
-        transaction.commit()
+        with connection.begin():
+            result = connection.execute(query).fetchone()
         connection.close()
         if not result:
             err = 'No element with id {} in database table {}'.format(
                 id_, self.core_table.name)
             raise rospy.ServiceException(err)
 
-        lama_object = LamaObject()
-        lama_object.id = id_
-        lama_object.id_in_world = result['id_in_world']
-        lama_object.name = result['name']
-        lama_object.emitter_id = result['emitter_id']
-        lama_object.emitter_name = result['emitter_name']
-        lama_object.type = result['type']
-
-        if lama_object.type == LamaObject.EDGE:
-            lama_object.references = self._get_lama_object_references(id_)
-            if len(lama_object.references) != 2:
-                raise rospy.ServiceException('Corrupted database')
-
-        return lama_object
+        return self._lama_object_from_result(result)
 
     def set_lama_object(self, lama_object):
         """Add/modify a lama object to the database
@@ -207,11 +195,19 @@ class CoreDBInterface(AbstractDBInterface):
         ---------
         - lama_object: an instance of LamaObject.
         """
+        if len(lama_object.references) != 2:
+                raise rospy.ServiceException(
+                    'malformed references, length = {}'.format(
+                        len(lama_object.references)))
+        if lama_object.type == LamaObject.EDGE and 0 in lama_object.references:
+                # 0 is undefined and not allowed.
+                raise rospy.ServiceException('edge references cannot be 0')
+
         is_undefined_vertex = (lama_object.name == 'undefined')
         is_special_vertex = lama_object.id < 0 or is_undefined_vertex
         is_new_vertex = lama_object.id == 0 and not is_undefined_vertex
 
-        # Check id existence
+        # Check for id existence.
         query = self.core_table.select(
             whereclause=(self.core_table.c.id == lama_object.id))
         connection = self.engine.connect()
@@ -234,38 +230,18 @@ class CoreDBInterface(AbstractDBInterface):
             'emitter_id': lama_object.emitter_id,
             'emitter_name': lama_object.emitter_name,
             'type': lama_object.type,
+            'v0': lama_object.references[0],
+            'v1': lama_object.references[1],
         }
         if not is_new_vertex:
             # If id is not given, i.e. if it is 0, the database will give it
             # an id automatically (primary key).
             insert_args['id'] = lama_object.id
         connection = self.engine.connect()
-        transaction = connection.begin()
-        result = connection.execute(self.core_table.insert(), insert_args)
-        object_id = result.inserted_primary_key[0]
-
-        # Insert data for the 'references' array.
-        if lama_object.type == LamaObject.EDGE:
-            if len(lama_object.references) != 2:
-                transaction.rollback()
-                connection.close()
-                raise rospy.ServiceException(
-                    'edge references must have two values')
-            if 0 in lama_object.references:
-                # 0 is undefined and not allowed.
-                transaction.rollback()
-                connection.close()
-                raise rospy.ServiceException('references cannot be 0')
-            for i, v in enumerate(lama_object.references):
-                insert_args = {
-                    'seq_num': i,
-                    'parent_id': object_id,
-                    '_value_': v,
-                }
-                connection.execute(self.core_obj_ref_table.insert(),
-                                   insert_args)
-        transaction.commit()
+        with connection.begin():
+            result = connection.execute(self.core_table.insert(), insert_args)
         connection.close()
+        object_id = result.inserted_primary_key[0]
 
         self._set_timestamp(rospy.Time.now())
         return object_id
@@ -274,73 +250,10 @@ class CoreDBInterface(AbstractDBInterface):
         """Remove a LamaObject from the database"""
         delete = self.core_table.delete(
             whereclause=(self.core_table.c.id == id_))
-        delete_refs = self.core_obj_ref_table.delete(
-            whereclause=(self.core_obj_ref_table.c.parent_id == id_))
-        connection = self.engine.connect()
-        transaction = connection.begin()
-        connection.execute(delete)
-        connection.execute(delete_refs)
-        transaction.commit()
-        connection.close()
-
-    def _get_lama_object_references(self, id_):
-        """Get the references of a LamaObject"""
-        # Make the transaction for the array 'references'.
-        query = self.core_obj_ref_table.select(
-            whereclause=(self.core_obj_ref_table.c.parent_id == id_))
         connection = self.engine.connect()
         with connection.begin():
-            refs = connection.execute(query).fetchall()
+            connection.execute(delete)
         connection.close()
-        if not refs:
-            return []
-        if len(refs) != 2:
-            raise rospy.ServiceException('Corrupted database')
-        references = [0] * 2
-        for ref in refs:
-            index = ref['seq_num']
-            val = ref['_value_']
-            references[index] = val
-        return references
-
-    def get_lama_objects(self, id_in_world):
-        """Get a list of vertices or edges from their id_in_world
-
-        Return a list of LamaObject instances.
-
-        Parameters
-        ----------
-        - id_in_world: int, lama object's id_in_world (not id in the database).
-        """
-        # Make the transaction for the core table.
-        connection = self.engine.connect()
-        transaction = connection.begin()
-        query = self.core_table.select(
-            whereclause=(self.core_table.c.id_in_world == id_in_world))
-        results = connection.execute(query).fetchall()
-        transaction.commit()
-        connection.close()
-        if not results:
-            err = 'No element with id_in_world {} in database table {}'.format(
-                id_in_world, self.core_table.name)
-            raise rospy.ServiceException(err)
-
-        lama_objects = []
-        for result in results:
-            lama_object = LamaObject()
-            lama_object.id = result['id']
-            lama_object.id_in_world = id_in_world
-            lama_object.name = result['name']
-            lama_object.type = result['type']
-
-            if lama_object.type == LamaObject.EDGE:
-                lama_object.references = self._get_lama_object_references(
-                    lama_object.id)
-                if len(lama_object.references) != 2:
-                    raise rospy.ServiceException('Corrupted database')
-            lama_objects.append(lama_object)
-
-        return lama_objects
 
     def get_descriptor_links(self, id_, interface_name=None):
         """Retrieve the list of DescriptorLink associated with a Lama object
@@ -430,9 +343,6 @@ class MapAgentInterface(object):
                 msg.action))
         callback = callbacks[msg.action]
         response = callback(msg)
-        if response.objects and not isinstance(response.objects[0].references, list): #debug
-            print 'action_callback: action: {}'.format(msg.action) # debug
-            print 'action_callback, response.objects: {}'.format(response.objects[0]) #debug
         return response
 
     def push_lama_object(self, msg):
@@ -446,12 +356,6 @@ class MapAgentInterface(object):
         - msg: an instance of ActOnMap request.
         """
         lama_object = copy.copy(msg.object)
-        # Workaround a strange bug, where msg.object.references is a tuple.
-        lama_object.references = list(msg.object.references)
-        if not isinstance(lama_object.references, list): #debug
-            print 'list?: {}'.format(isinstance(msg.object.references, list))
-            print 'push_lama_object, msg_object: {}'.format(msg.object) #debug
-            print 'push_lama_object, lama_object: {}'.format(lama_object) #debug
         lama_object.id = self.core_iface.set_lama_object(lama_object)
         response = ActOnMapResponse()
         response.objects.append(lama_object)
@@ -555,51 +459,21 @@ class MapAgentInterface(object):
         ----------
         - lama_object: an instance of LamaObject
         """
-        # Safeguard for malformed references.
-        if lama_object.type == LamaObject.EDGE and not lama_object.references:
-            # Workaround a strange bug, where msg.object.references is a tuple.
-            lama_object.references = list(lama_object.references)
-            lama_object.references.append(0)
-        if (lama_object.type == LamaObject.EDGE and
-            len(lama_object.references) < 2):
-            # Workaround a strange bug, where msg.object.references is a tuple.
-            lama_object.references = list(lama_object.references)
-            lama_object.references.append(0)
+        if lama_object.type == LamaObject.VERTEX:
+            lama_object.references = [0, 0]
 
         coretable = self.core_iface.core_table
-        reftable = self.core_iface.core_obj_ref_table
-        query = select([coretable.c.id], from_obj=[coretable, reftable])
+        query = coretable.select()
         query = query.where(coretable.c['id'] != 0)
-        if lama_object.id:
-            query = query.where(coretable.c['id'] == lama_object.id)
-        if lama_object.id_in_world:
-            query = query.where(
-                coretable.c['id_in_world'] == lama_object.id_in_world)
-        if lama_object.name:
-            query = query.where(coretable.c['name'] == lama_object.name)
-        if lama_object.emitter_id:
-            query = query.where(
-                coretable.c['emitter_id'] == lama_object.emitter_id)
-        if lama_object.emitter_name:
-            query = query.where(
-                coretable.c['emitter_name'] == lama_object.emitter_name)
-        if lama_object.type:
-            query = query.where(coretable.c['type'] == lama_object.type)
-        if lama_object.type == LamaObject.EDGE and lama_object.references[0]:
-            if lama_object.id:
-                query = query.where((coretable.c['id'] ==
-                                     reftable.c['parent_id']))
-            query = query.where((reftable.c['_value_'] ==
-                                 lama_object.references[0]))
-            query = query.where(reftable.c['seq_num'] == 0)
-        if lama_object.type == LamaObject.EDGE and lama_object.references[1]:
-            if lama_object.id:
-                query = query.where((coretable.c['id'] ==
-                                     reftable.c['parent_id']))
-            query = query.where((reftable.c['_value_'] ==
-                                 lama_object.references[1]))
-            query = query.where(reftable.c['seq_num'] == 1)
-        rospy.loginfo('SQL query: {}'.format(query))
+        for attr in self.core_iface.direct_attributes:
+            v = getattr(lama_object, attr)
+            if v:
+                query = query.where(coretable.c[attr] == v)
+        if lama_object.references[0]:
+            query = query.where(coretable.c['v0'] == lama_object.references[0])
+        if lama_object.references[1]:
+            query = query.where(coretable.c['v1'] == lama_object.references[1])
+        rospy.logdebug('SQL query: {}'.format(query))
 
         connection = self.engine.connect()
         with connection.begin():
@@ -607,14 +481,10 @@ class MapAgentInterface(object):
         connection.close()
         if not results:
             return []
-        object_ids = []
         objects = []
         for result in results:
-            if id in object_ids:
-                continue
-            match = self.core_iface.get_lama_object(result['id'])
-            object_ids.append(result['id'])
-            objects.append(match)
+            lama_object = self.core_iface._lama_object_from_result(result)
+            objects.append(lama_object)
         return objects
 
     def get_vertex_list(self, msg):
@@ -697,8 +567,7 @@ class MapAgentInterface(object):
         """
         msg_get_edges = ActOnMapRequest()
         msg_get_edges.object.type = msg_get_edges.object.EDGE
-        msg_get_edges.object.references.append(msg.object.id)
-        msg_get_edges.object.references.append(0)
+        msg_get_edges.object.references[0] = msg.object.id
         return self.get_edge_list(msg_get_edges)
 
 
