@@ -1,0 +1,5 @@
+<launch>
+
+	<node name="map_node" pkg="lama_interfaces" type="map_node" output="screen" />
+
+</launch>
