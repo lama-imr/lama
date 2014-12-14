@@ -9,7 +9,8 @@ const int NJockey::histogram_bin_size_ = 20;
 NJockey::NJockey(const std::string& name, const std::string& segment_interface_name, const std::string& segment_getter_name) :
   lama_jockeys::NavigatingJockey(name),
   it_(private_nh_),
-  forward_velocity_(0.050),
+  forward_velocity_(0.5),
+  kp_(1.0),
   matcher_max_relative_distance_(0.8),
   max_angular_velocity_(0.5),
   min_angular_velocity_(0.05),
@@ -17,7 +18,6 @@ NJockey::NJockey(const std::string& name, const std::string& segment_interface_n
   segment_getter_name_(segment_getter_name),
   has_odom_(false),
   start_angle_reached_(false),
-  segment_end_reached_(false),
   image_processing_running_(false)
 {
   // Debug log level
@@ -26,10 +26,11 @@ NJockey::NJockey(const std::string& name, const std::string& segment_interface_n
     ros::console::notifyLoggerLevelsChanged();
   }
 
-  private_nh_.getParamCached("forward_velocity", forward_velocity_);
-  private_nh_.getParamCached("kp", kp_);
-  private_nh_.getParamCached("matcher_max_relative_distance", matcher_max_relative_distance_);
-  private_nh_.getParamCached("max_angular_velocity", max_angular_velocity_);
+  private_nh_.getParam("forward_velocity", forward_velocity_);
+  private_nh_.getParam("kp", kp_);
+  private_nh_.getParam("matcher_max_relative_distance", matcher_max_relative_distance_);
+  private_nh_.getParam("max_angular_velocity", max_angular_velocity_);
+  private_nh_.getParam("min_angular_velocity", min_angular_velocity_);
 
   twist_publisher_ = private_nh_.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
@@ -42,7 +43,6 @@ void NJockey::reset()
 {
   has_odom_ = false;
   start_angle_reached_ = false;
-  segment_end_reached_ = false;
   image_processing_running_ = false;
 }
 
@@ -55,7 +55,8 @@ bool NJockey::retrieveSegment()
   map_agent_.call(map_action);
   if (map_action.response.descriptor_links.empty())
   {
-    ROS_DEBUG("No segment associated with vertex %d", map_action.request.object.id);
+    ROS_DEBUG_STREAM("No segment associated with vertex " << map_action.request.object.id <<
+        " (interface \"" << segment_interface_name_ << "\")");
     return false;
   }
   if (map_action.response.descriptor_links.size() > 1)
@@ -63,7 +64,7 @@ bool NJockey::retrieveSegment()
     ROS_WARN("More than segment associated with edge %d, taking the first one",
         map_action.request.object.id);
   }
-  ::featurenav_base::GetSegment get_segment_srv;
+  GetSegment get_segment_srv;
   get_segment_srv.request.id = map_action.response.descriptor_links[0].descriptor_id;
   if (!segment_getter_proxy_.call(get_segment_srv))
   {
@@ -100,6 +101,17 @@ void NJockey::onTraverse()
     return;
   }
 
+  // Get the segment.
+  ROS_DEBUG("Getting the segment"); // DEBUG
+  if (!retrieveSegment())
+  {
+    ROS_ERROR("No edge with id %d or no segment associated with it", goal_.edge.id);
+    server_.setAborted();
+    return;
+  }
+  ROS_INFO("Starting to follow a segment with %zu landmarks at angle %.3f rad over %.3f m",
+      segment_.landmarks.size(), segment_.yaw, segment_.distance);
+
   odom_handler_ = private_nh_.subscribe("odom", 1, &NJockey::callback_odom, this);
   
   // Waiting for the first odometry message.
@@ -110,16 +122,6 @@ void NJockey::onTraverse()
     ros::spinOnce();
     ROS_WARN_STREAM_THROTTLE(5, "Waiting for odometry on topic " << odom_handler_.getTopic());
     ros::Duration(0.01).sleep();
-  }
-
-  ROS_DEBUG("Getting the segment"); // DEBUG
-
-  // Get the segment.
-  if (!retrieveSegment())
-  {
-    ROS_ERROR("No edge with id %d or no segment associated with it", goal_.edge.id);
-    server_.setAborted();
-    return;
   }
 
   ROS_DEBUG("Orienting the robot");
@@ -147,16 +149,14 @@ void NJockey::onTraverse()
     ros::spinOnce();
     if (server_.isPreemptRequested())
     {
-      ROS_INFO("%s: Preempted", jockey_name_.c_str());
+      ROS_INFO("preempted");
       // set the action state to preempted
       // TODO: should the server be preempted?
       // server_.setPreempted();
       break;
     }
 
-    ROS_DEBUG_THROTTLE(10, "DEBUG 1"); // DEBUG
-
-    if (segment_end_reached_)
+    if (distance_from_start() > segment_.distance)
     {
       image_handler_.shutdown();
       odom_handler_.shutdown();
@@ -166,9 +166,9 @@ void NJockey::onTraverse()
       server_.setSucceeded(result_);
       break;
     }
-    segment_end_reached_ = false;
     r.sleep();
   }
+  reset();
   ROS_DEBUG("Exiting onTraverse");
 }
 
@@ -223,6 +223,7 @@ void NJockey::callback_image(const sensor_msgs::ImageConstPtr& msg)
   geometry_msgs::Twist twist;
   twist.linear.x = forward_velocity_;
   double dtheta;
+  // TODO: adapt the velocity to the number of matches.
   processImage(msg, dtheta);
 
   twist.angular.z = saturate(kp_ * dtheta);
@@ -236,7 +237,7 @@ void NJockey::callback_image(const sensor_msgs::ImageConstPtr& msg)
  * direction[in] direction the robot should have at the end (in odometry_ frame).
  * twist[out] set velocity.
  */
-geometry_msgs::Twist NJockey::turnToAngle(const double direction)
+geometry_msgs::Twist NJockey::turnToAngle(double direction)
 {
   geometry_msgs::Twist twist;
   if (start_angle_reached_)
@@ -246,36 +247,34 @@ geometry_msgs::Twist NJockey::turnToAngle(const double direction)
 
   const double yaw_now = tf::getYaw(odom_.pose.pose.orientation);
   const double dtheta = angles::shortest_angular_distance(yaw_now, direction);
-  ROS_DEBUG("dtheta to goal: %f", dtheta);
+  ROS_DEBUG("dtheta to goal: %.3f", dtheta);
 
   twist.angular.z = saturate(kp_ * dtheta);
   start_angle_reached_ = (std::abs(dtheta) < reach_angular_distance_);
   return twist;
 }
 
-double NJockey::saturate(const double w) const
+double NJockey::saturate(double w) const
 {
-  double w_out = w;
-
-  if (w_out > max_angular_velocity_)
+  if (w > max_angular_velocity_)
   {
-    w_out = max_angular_velocity_;
+    w = max_angular_velocity_;
   }
-  else if (w_out < -max_angular_velocity_)
+  else if (w < -max_angular_velocity_)
   {
-    w_out = -max_angular_velocity_;
+    w = -max_angular_velocity_;
   }
 
   // Dead-zone management.
-  if ((w_out > 0) && (w_out < min_angular_velocity_))
+  if ((w > 0) && (w < min_angular_velocity_))
   {
-    w_out = min_angular_velocity_;
+    w = min_angular_velocity_;
   }
-  else if ((w_out < 0) && (w_out > -min_angular_velocity_))
+  else if ((w < 0) && (w > -min_angular_velocity_))
   {
-    w_out = -min_angular_velocity_;
+    w = -min_angular_velocity_;
   }
-  return w_out;
+  return w;
 }
 
 /* Return the number of matched landmarks and the angular deviation to learned path
@@ -284,54 +283,82 @@ size_t NJockey::processImage(const sensor_msgs::ImageConstPtr& image, double& w)
 {
   vector<KeyPoint> keypoints;
   vector<Feature> descriptors;
-  extract_features_(image, keypoints, descriptors);
+  try
+  {
+    extract_features_(image, keypoints, descriptors);
+  }
+  catch (std::exception)
+  {
+    ROS_ERROR("Error caught on extract_features, ignoring image");
+    w = 0;
+    return 0;
+  }
   ROS_DEBUG("Number of detected features: %zu", keypoints.size());
 
   const double d = distance_from_start();
   vector<Landmark> landmarks = select_tracked_landmarks(d);
   ROS_DEBUG("Number of tracked landmarks: %zu", landmarks.size());
 
-  vector<double> hist = compute_horizontal_differences(landmarks, keypoints, descriptors, d);
-
-  if (hist.empty())
+  if (landmarks.empty())
   {
+    w = 0;
+    return 0;
+  }
+  
+  vector<double> dthetas = compute_horizontal_differences(landmarks, keypoints, descriptors, d);
+
+  if (dthetas.empty())
+  {
+    w = 0;
     return 0;
   }
   
   double dtheta = 0;
-  double min_value = *std::min_element(hist.begin(), hist.end());
-  double max_value = *std::max_element(hist.begin(), hist.end());
-  int num_bins = (max_value - min_value) / histogram_bin_size_;
-  accumulator_type accumulator(density::num_bins = num_bins, density::cache_size = hist.size());
-  accumulator = std::for_each(hist.begin(), hist.end(), accumulator);
+  double min_value = *std::min_element(dthetas.begin(), dthetas.end());
+  double max_value = *std::max_element(dthetas.begin(), dthetas.end());
+  int num_bins = std::max(1, (int)(max_value - min_value) / histogram_bin_size_);
+  accumulator_type accumulator(density::num_bins = num_bins, density::cache_size = dthetas.size());
+  accumulator = std::for_each(dthetas.begin(), dthetas.end(), accumulator);
   histogram_type histogram = boost::accumulators::density(accumulator);
 
   // TODO: more histograms (shifted by the pixel) and find maximum in multi-array histogram
   
-  int hist_max_i = 0;
+  int hist_max_i = -1;
   double max_density = -1;
   for (size_t i = 0; i < histogram.size(); ++i)
   {
+    ROS_DEBUG("histogram: (%.3f, %.3f)", histogram[i].first, histogram[i].second);
+    if (isnan(histogram[i].first || isinf(histogram[i].first)))
+    {
+      break;
+    }
     if (histogram[i].second > max_density)
     {
       hist_max_i = i;
       max_density = histogram[i].second;
     }
   }
-  dtheta = histogram[hist_max_i].first + histogram_bin_size_ / 2.0;
+  if (hist_max_i == -1)
+  {
+    dtheta = histogram.back().first + histogram_bin_size_ / 2.0;
+  }
+  else
+  {
+    dtheta = histogram[hist_max_i].first + histogram_bin_size_ / 2.0;
+  }
 
-  ROS_DEBUG("Ratio of features close to modus: %.2f %%", histogram[hist_max_i].second * 100.0);
-  ROS_DEBUG("Modus of position differences: %.3f pixels", dtheta);
+  ROS_DEBUG("Highest bin density: %.1f %%", histogram[hist_max_i].second * 100.0);
+  ROS_DEBUG("Position difference with highest density: %.3f pixels", dtheta);
 
   return dtheta;
 }
 
-vector<Landmark> NJockey::select_tracked_landmarks(const double d) const
+vector<Landmark> NJockey::select_tracked_landmarks(double d) const
 {
   vector<Landmark> landmarks;
   for (size_t i = 0; i < segment_.landmarks.size(); ++i)
   {
-    if ((segment_.landmarks[i].du <= d) && (segment_.landmarks[i].dv >= d))
+    if ((segment_.landmarks[i].du <= d) && (d <= segment_.landmarks[i].dv))
     {
       landmarks.push_back(segment_.landmarks[i]);
     }
@@ -340,9 +367,9 @@ vector<Landmark> NJockey::select_tracked_landmarks(const double d) const
 }
 
 vector<double> NJockey::compute_horizontal_differences(const vector<Landmark>& landmarks,
-    const vector<cv::KeyPoint>& keypoints, const vector<Feature>& descriptors, const double d)
+    const vector<cv::KeyPoint>& keypoints, const vector<Feature>& descriptors, double d)
 {
-  vector<double> hist;
+  vector<double> dthetas;
 
   vector<vector<cv::DMatch> > matches;
 
@@ -351,30 +378,38 @@ vector<double> NJockey::compute_horizontal_differences(const vector<Landmark>& l
   {
     matches.clear();
     vector<Feature> query_descriptors(1, landmarks[i].descriptor);
-    match_descriptors_(query_descriptors, descriptors, matches);
+    try
+    {
+      match_descriptors_(query_descriptors, descriptors, matches);
+    }
+    catch (std::exception)
+    {
+      ROS_ERROR("Error caught on match_descriptors, ignoring image");
+      return dthetas;
+    }
+
     if (matches.size() < 1)
     {
-      /* ROS_DEBUG("No match found"); */
       continue;
     }
     if (matches[0].size() < 2)
     {
-      ROS_ERROR("Not enough matches, found %zu", matches[0].size());
+      ROS_DEBUG("Not enough matches, found %zu", matches[0].size());
       continue;
     }
     // Add to the horizontal differences.
     if (matches[0][0].distance < matcher_max_relative_distance_ * matches[0][1].distance)
     {
-      double dx = (landmarks[i].v.x - landmarks[i].u.x) * (d - landmarks[i].du) / (landmarks[i].dv -
-          landmarks[i].dv) +
+      const double dx = (landmarks[i].v.x - landmarks[i].u.x) * (d - landmarks[i].du) / (landmarks[i].dv -
+          landmarks[i].du) +
         landmarks[i].u.x - keypoints[matches[0][0].trainIdx].pt.x;
       if (!isnan(dx))
       {
-        hist.push_back(dx);
+        dthetas.push_back(dx);
       }
     }
   }
-  return hist;
+  return dthetas;
 }
 
 } // namespace featurenav_base

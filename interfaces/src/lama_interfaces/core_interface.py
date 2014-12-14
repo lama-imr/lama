@@ -323,6 +323,22 @@ class MapAgentInterface(object):
         ----------
         - msg: an instance of ActOnMap request.
         """
+        # Raise an error if pushing the wrong type.
+        if (msg.action == msg.PUSH_VERTEX and
+            msg.object.type not in [0, msg.object.VERTEX]):
+            raise rospy.ServiceException(
+                'Action PUSH_VERTEX, LamaObject is not a vertex')
+        if (msg.action == msg.PUSH_EDGE and
+            msg.object.type not in [0, msg.object.EDGE]):
+            raise rospy.ServiceException(
+                'Action PUSH_EDGE, LamaObject is not an edge')
+
+        # Force object type for PUSH_VERTEX and PUSH_EDGE.
+        if msg.action == msg.PUSH_EDGE:
+            msg.object.type = msg.object.EDGE
+        if msg.action == msg.PUSH_VERTEX:
+            msg.object.type = msg.object.VERTEX
+
         callbacks = {
             msg.PUSH_VERTEX: self.push_lama_object,
             msg.PULL_VERTEX: self.pull_lama_object,

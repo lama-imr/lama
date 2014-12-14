@@ -2,7 +2,7 @@
 
 namespace featurenav_base {
 
-const ros::Duration AJockey::max_odom_age_ = ros::Duration(0.5);
+const ros::Duration AJockey::max_odom_age_ = ros::Duration(2.0);
 const ros::Duration AJockey::max_landmark_age_ = ros::Duration(2.0);
 
 AJockey::AJockey(const std::string& name, const std::string& segment_interface_name, const std::string& segment_setter_name) :
@@ -72,6 +72,7 @@ void AJockey::onStartLearn()
     ros::Duration(0.01).sleep();
   }
   ROS_DEBUG("Received odometry");
+  ROS_INFO("Received odometry");
 
   // We got odom_, save as start_pose_.
   start_pose_ = odom_.pose.pose;
@@ -145,7 +146,7 @@ void AJockey::onStopLearn()
 
   // Save the segment into the database and return its id.
   ROS_INFO("Saving a segment with %zu landmarks", segment_.landmarks.size());
-  ::featurenav_base::SetSegment segment_setter;
+  SetSegment segment_setter;
   segment_setter.request.descriptor = segment_;
   if (!segment_setter_proxy_.call(segment_setter))
   {
@@ -154,7 +155,7 @@ void AJockey::onStopLearn()
     return;
   }
   ROS_DEBUG("Added Segment with id %d", segment_setter.response.id);
-  result_.descriptor_link = segmentDescriptorLink(segment_setter.response.id);
+  result_.descriptor_links.push_back(segmentDescriptorLink(segment_setter.response.id));
   server_.setSucceeded(result_);
   reset();
 }
@@ -195,7 +196,9 @@ void AJockey::callback_odom(const nav_msgs::OdometryConstPtr& msg)
   {
     odom_ = *msg;
     has_odom_ = true;
+    return;
   }
+  ROS_WARN("Odometry received but too old (%.3f s)", (ros::Time::now() - msg->header.stamp).toSec());
 }
 
 /* Process an image and return the number of tracked features.
@@ -219,7 +222,15 @@ size_t AJockey::processImage(const sensor_msgs::ImageConstPtr& image)
 
   vector<KeyPoint> keypoints;
   vector<Feature> descriptors;
-  extract_features_(image, keypoints, descriptors);
+  try
+  {
+    extract_features_(image, keypoints, descriptors);
+  }
+  catch (std::exception)
+  {
+    ROS_ERROR("Error caught on extract_features, ignoring image");
+    return 0;
+  }
 
   if (descriptors.empty())
   {
@@ -246,7 +257,15 @@ size_t AJockey::processImage(const sensor_msgs::ImageConstPtr& image)
     query_descriptors.push_back(landmarks_[i].landmark.descriptor);
   }
   vector<vector<DMatch> > matches;
-  match_descriptors_(query_descriptors, descriptors, matches);
+  try
+  {
+    match_descriptors_(query_descriptors, descriptors, matches);
+  }
+  catch (std::exception)
+  {
+    ROS_ERROR("Error caught on match_descriptors, ignoring image");
+    return 0;
+  }
 
   if (matches.empty())
   {

@@ -4,6 +4,7 @@ from math import pi
 import unittest
 
 import rospy
+import rospkg
 import roslib.message
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Pose
@@ -11,6 +12,7 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Polygon
 from geometry_msgs.msg import Point32
 
+import lama_interfaces
 from lama_interfaces.interface_factory import interface_factory
 from lama_interfaces.cleartext_interface_factory import cleartext_interface_factory
 from lama_interfaces.srv import GetDoubleRequest
@@ -20,6 +22,12 @@ from lama_interfaces.srv import GetVectorPoseRequest
 from lama_interfaces.srv import GetVectorOdometryRequest
 from lama_interfaces.srv import GetPolygonRequest
 
+home_dir = rospkg.get_ros_home()
+
+lama_interfaces.interface_factory._engine_name = (
+    'sqlite:///{}/lama.sqlite'.format(home_dir))
+lama_interfaces.cleartext_interface_factory._engine_name = (
+    'sqlite:///{}/lama.sqlite'.format(home_dir))
 
 class RosTestCase(unittest.TestCase):
     def assertMsgEqual(self, msg0, msg1):

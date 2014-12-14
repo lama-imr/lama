@@ -2,7 +2,7 @@
 #define FEATURENAV_BASE_NJOCKEY_H
 
 #include <algorithm>  // std::for_each
-#include <cmath>  // std::abs
+#include <cmath>  // std::abs, std::max
 #include <utility>  // std::pair
 
 #include <boost/smart_ptr.hpp>
@@ -107,9 +107,8 @@ class NJockey : public lama_jockeys::NavigatingJockey
     feature_extractor_function_ptr extract_features_;
     descriptor_matcher_function_ptr match_descriptors_;
     nav_msgs::Odometry odom_;  //!> Last received odometry message.
-    bool has_odom_;
-    bool start_angle_reached_;
-    bool segment_end_reached_;
+    bool has_odom_;  //!> true after an Odometry message was received.
+    bool start_angle_reached_;  //!> true after the initial rotation.
     bool image_processing_running_;  //!> true when treating an image.
     geometry_msgs::Pose start_pose_;  //!> Pose when learning started.
     ::featurenav_base::Segment segment_;  //!> Segment we will traverse.
