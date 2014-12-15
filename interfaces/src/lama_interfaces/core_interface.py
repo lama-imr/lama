@@ -24,18 +24,14 @@ _default_core_table_name = 'lama_object'
 _default_descriptor_table_name = 'lama_descriptor_link'
 _default_map_agent_name = '/lama_map_agent'
 
-# sqlalchemy engine (argument to sqlalchemy.create_engine)
-_engine_name = rospy.get_param('/database_engine', 'sqlite:///lama.sqlite')
-
 
 class CoreDBInterface(AbstractDBInterface):
-    def __init__(self, engine, interface_name=None, descriptor_table_name=None,
+    def __init__(self, interface_name=None, descriptor_table_name=None,
                  start=False):
         """Build the map interface for LamaObject
 
         Parameters
         ----------
-        - engine: String, argument to sqlalchemy.create_engine.
         - interface_name: string, name of the table containing LamaObject
             messages (vertices and edges). Defaults to 'lama_objects'.
         - descriptor_table_name: string, name of the table for DescriptorLink
@@ -52,7 +48,7 @@ class CoreDBInterface(AbstractDBInterface):
 
         get_srv_type = 'lama_interfaces/GetLamaObject'
         set_srv_type = 'lama_interfaces/SetLamaObject'
-        super(CoreDBInterface, self).__init__(engine, interface_name,
+        super(CoreDBInterface, self).__init__(interface_name,
                                               get_srv_type, set_srv_type,
                                               start=start)
 
@@ -301,7 +297,7 @@ class MapAgentInterface(object):
             self.map_agent = None
             self.map_agent_proxy = None
 
-        self.core_iface = CoreDBInterface(_engine_name, start=False)
+        self.core_iface = CoreDBInterface(start=False)
         self.connection = self.core_iface.connection
 
     def action_callback(self, msg):
@@ -586,6 +582,6 @@ def core_interface():
     it starts ROS services and an error is raised if services are started
     twice.
     """
-    iface = CoreDBInterface(_engine_name, start=True)
+    iface = CoreDBInterface(start=True)
     map_agent_iface = MapAgentInterface(start=True)
     return iface, map_agent_iface

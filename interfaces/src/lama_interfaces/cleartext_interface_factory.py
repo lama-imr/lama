@@ -36,9 +36,6 @@ _suffix_for_builtin = '_value_'
 
 _types_table_name = 'message_types'
 
-# sqlalchemy engine (argument to sqlalchemy.create_engine)
-_engine_name = rospy.get_param('/database_engine', 'sqlite:///lama.sqlite')
-
 # TODO: remove all occurences of roslib.msgs
 
 
@@ -559,7 +556,7 @@ class SqlMsg(object):
         recursively to create a new table for the vector data.
 
         Parameters:
-            - metadata: instance of sqlalchemy.Metadata bound to an engine.
+            - tablename: str, table name, must be SQL compatible.
             - type_: str, type description.
             - parent: str, name of parent table for nested tables. A nested
                 table is created when an array is met in the ROS type.
@@ -595,12 +592,12 @@ class SqlMsg(object):
                               type_=subtype,
                               parenttable=nested_tablename)
 
-    def getter(self, engine, id_):
+    def getter(self, connection, id_):
         """Retrieve a message from the database
 
         Parameters
         ----------
-        - engine: sqlalchemy.engine instance.
+        - connection: sqlalchemy engine connection instance.
         """
         def parentSeqs(ids, name):
             seqs = []
@@ -652,7 +649,6 @@ class SqlMsg(object):
         # ids is a map (table, seq_nums): ids.
         ids = {}
 
-        connection = engine.connect()
         transaction = connection.begin()
 
         # The first table is special and needs to be treated outside the loop.
@@ -663,8 +659,7 @@ class SqlMsg(object):
         result = dict(connection.execute(query).fetchone())
         if result is None:
             rospy.logerr('No id {} in table {}'.format(id_, rossqltable.name))
-            transaction.commit()
-            connection.close()
+            transaction.rollback()
             return
         ids[rossqltable.name, tuple()] = id_
 
@@ -687,15 +682,14 @@ class SqlMsg(object):
             getFromTable(msg, rossqltable)
 
         transaction.commit()
-        connection.close()
         return msg
 
-    def setter(self, engine, msg):
+    def setter(self, connection, msg):
         """Add to the database and return the id
 
         Parameters
         ----------
-        - engine: sqlalchemy.engine instance.
+        - connection: sqlalchemy engine connection instance.
         - msg: instance of ROS message.
         """
         def parentSeqs(ids, name):
@@ -737,7 +731,6 @@ class SqlMsg(object):
                     ids[rossqltable.name, new_seq] = (
                         result.inserted_primary_key[0])
 
-        connection = engine.connect()
         transaction = connection.begin()
 
         # ids is a map (table, seq_nums): id. seq_nums is the tuple of sequence
@@ -761,7 +754,6 @@ class SqlMsg(object):
             insertInTable(msg, rossqltable)
 
         transaction.commit()
-        connection.close()
         return return_id
 
 
@@ -798,7 +790,7 @@ class DBInterface(AbstractDBInterface):
         """Execute the getter service and return the response"""
         # Create an instance of response.
         response = self.getter_service_class._response_class()
-        result = self.sqlmsg.getter(self.engine, msg.id)
+        result = self.sqlmsg.getter(self.connection, msg.id)
         response.descriptor = result
         return response
 
@@ -806,7 +798,7 @@ class DBInterface(AbstractDBInterface):
         """Execute the setter service and return the reponse"""
         # Create an instance of response.
         response = self.setter_service_class._response_class()
-        id_ = self.sqlmsg.setter(self.engine, msg.descriptor)
+        id_ = self.sqlmsg.setter(self.connection, msg.descriptor)
         # Return the descriptor identifier.
         response.id = id_
         self._set_timestamp(rospy.Time.now())
@@ -847,7 +839,6 @@ def cleartext_interface_factory(interface_name, getter_srv_msg, setter_srv_msg):
         getter_srv_msg = getter_srv_msg[:-4]
     if setter_srv_msg.endswith('.srv'):
         setter_srv_msg = setter_srv_msg[:-4]
-    iface = DBInterface(_engine_name, interface_name,
-                        getter_srv_msg, setter_srv_msg,
+    iface = DBInterface(interface_name, getter_srv_msg, setter_srv_msg,
                         start=True)
     return iface

@@ -10,10 +10,6 @@ from sqlalchemy.types import Integer, Binary
 
 from abstract_db_interface import AbstractDBInterface
 
-# sqlalchemy engine (argument to sqlalchemy.create_engine)
-_engine_name = rospy.get_param('/database_engine', 'sqlite:///lama.sqlite')
-
-
 class DBInterface(AbstractDBInterface):
     @property
     def interface_type(self):
@@ -27,11 +23,8 @@ class DBInterface(AbstractDBInterface):
         # Make the transaction.
         id_ = msg.id
         query = self.table.select(whereclause=(self.table.c.id == id_))
-        connection = self.engine.connect()
-        transaction = connection.begin()
-        result = connection.execute(query).fetchone()
-        transaction.commit()
-        connection.close()
+        with self.connection.begin():
+            result = self.connection.execute(query).fetchone()
         if not result:
             err = 'No element with id {} in database table {}'.format(
                 id_, self.table.name)
@@ -48,11 +41,8 @@ class DBInterface(AbstractDBInterface):
 
         # Make the transaction.
         insert_args = {'serialized_content': buf.getvalue()}
-        connection = self.engine.connect()
-        transaction = connection.begin()
-        result = connection.execute(self.table.insert(), insert_args)
-        transaction.commit()
-        connection.close()
+        with self.connection.begin():
+            result = self.connection.execute(self.table.insert(), insert_args)
         return_id = result.inserted_primary_key[0]
 
         # Return a setter response instance with the descriptor identifier.
@@ -118,7 +108,6 @@ def interface_factory(interface_name, getter_srv_msg, setter_srv_msg):
         getter_srv_msg = getter_srv_msg[:-4]
     if setter_srv_msg.endswith('.srv'):
         setter_srv_msg = setter_srv_msg[:-4]
-    iface = DBInterface(_engine_name, interface_name,
-                        getter_srv_msg, setter_srv_msg,
+    iface = DBInterface(interface_name, getter_srv_msg, setter_srv_msg,
                         start=True)
     return iface

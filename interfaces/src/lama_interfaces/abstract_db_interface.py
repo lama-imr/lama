@@ -6,6 +6,9 @@ import sqlalchemy
 import rospy
 import roslib.message
 
+# sqlalchemy engine (argument to sqlalchemy.create_engine)
+_engine_name = rospy.get_param('/database_engine', 'sqlite:///lama.sqlite')
+
 # Table name for type description
 _interfaces_table_name = 'map_interfaces'
 
@@ -13,13 +16,19 @@ _interfaces_table_name = 'map_interfaces'
 class AbstractDBInterface(object):
     __metaclass__ = ABCMeta
 
-    def __init__(self, engine, interface_name,
-                 getter_srv_type, setter_srv_type, start=False):
+    # Database related class attributes.
+    engine = sqlalchemy.create_engine(_engine_name,
+                                      poolclass=sqlalchemy.pool.StaticPool)
+    metadata = sqlalchemy.MetaData()
+    metadata.bind = engine
+    connection = engine.connect()
+
+    def __init__(self, interface_name, getter_srv_type, setter_srv_type,
+                 start=False):
         """Build the map interface and possibly start ROS services
 
         Parameters
         ----------
-        - engine: String, argument to sqlalchemy.create_engine.
         - interface_name: string, name of the map interface.
         - getter_srv_type: string, service message to write into the map.
         - setter_srv_type: string, service message to read from the map.
@@ -57,11 +66,6 @@ class AbstractDBInterface(object):
         # interface name
         self.interface_name = interface_name
 
-        # Database related attributes.
-        self.engine = sqlalchemy.create_engine(engine)
-        self.metadata = sqlalchemy.MetaData()
-        self.metadata.bind = self.engine
-        self.connection = self.engine.connect()
         # Read tables from the possibly existing database.
         self.metadata.reflect()
         # Add the table for type description.
@@ -150,11 +154,8 @@ class AbstractDBInterface(object):
         msg_type = self.getter_service_class._response_class._slot_types[0]
 
         query = table.select(whereclause=(table.c.interface_name == name))
-        connection = self.engine.connect()
-        transaction = connection.begin()
-        result = connection.execute(query).fetchone()
-        transaction.commit()
-        connection.close()
+        with self.connection.begin():
+            result = self.connection.execute(query).fetchone()
 
         add_interface = True
         if result:
@@ -177,11 +178,8 @@ class AbstractDBInterface(object):
                 'message_type': msg_type,
                 'interface_type': self.interface_type,
             }
-            connection = self.engine.connect()
-            transaction = connection.begin()
-            connection.execute(table.insert(), insert_args)
-            transaction.commit()
-            connection.close()
+            with self.connection.begin():
+                self.connection.execute(table.insert(), insert_args)
 
     def _get_last_modified(self):
         """Return the date of last modification for this interface
@@ -191,11 +189,8 @@ class AbstractDBInterface(object):
         table = self.interface_table
         name = self.interface_name
         query = table.select(whereclause=(table.c.interface_name == name))
-        connection = self.engine.connect()
-        transaction = connection.begin()
-        result = connection.execute(query).fetchone()
-        transaction.commit()
-        connection.close()
+        with self.connection.begin():
+            result = self.connection.execute(query).fetchone()
 
         if not result:
             raise rospy.ServiceException('Corrupted database')
@@ -219,11 +214,8 @@ class AbstractDBInterface(object):
             'timestamp_nsecs': time.nsecs,
         }
         update = table.update().where(table.c.interface_name == name)
-        connection = self.engine.connect()
-        transaction = connection.begin()
-        connection.execute(update, update_args)
-        transaction.commit()
-        connection.close()
+        with self.connection.begin():
+            self.connection.execute(update, update_args)
 
     def has_table(self, table):
         """Return true if table is in the database"""
