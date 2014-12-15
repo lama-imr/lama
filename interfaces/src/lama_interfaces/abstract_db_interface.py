@@ -61,6 +61,7 @@ class AbstractDBInterface(object):
         self.engine = sqlalchemy.create_engine(engine)
         self.metadata = sqlalchemy.MetaData()
         self.metadata.bind = self.engine
+        self.connection = self.engine.connect()
         # Read tables from the possibly existing database.
         self.metadata.reflect()
         # Add the table for type description.
