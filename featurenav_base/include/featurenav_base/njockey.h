@@ -2,7 +2,7 @@
 #define FEATURENAV_BASE_NJOCKEY_H
 
 #include <algorithm>  // std::for_each
-#include <cmath>  // std::abs, std::max
+#include <cmath>  // std::abs, std::max, std::min, std::ceil
 #include <utility>  // std::pair
 
 #include <boost/smart_ptr.hpp>

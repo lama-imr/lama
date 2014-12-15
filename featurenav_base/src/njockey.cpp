@@ -10,10 +10,10 @@ NJockey::NJockey(const std::string& name, const std::string& segment_interface_n
   lama_jockeys::NavigatingJockey(name),
   it_(private_nh_),
   forward_velocity_(0.5),
-  kp_(1.0),
+  kp_(0.01),
   matcher_max_relative_distance_(0.8),
-  max_angular_velocity_(0.5),
-  min_angular_velocity_(0.05),
+  max_angular_velocity_(1.0),
+  min_angular_velocity_(0.0),
   segment_interface_name_(segment_interface_name),
   segment_getter_name_(segment_getter_name),
   has_odom_(false),
@@ -48,6 +48,7 @@ void NJockey::reset()
 
 bool NJockey::retrieveSegment()
 {
+  ros::Time start = ros::Time::now();
   lama_interfaces::ActOnMap map_action;
   map_action.request.action = lama_interfaces::ActOnMapRequest::GET_DESCRIPTOR_LINKS;
   map_action.request.object.id = goal_.edge.id;
@@ -74,7 +75,8 @@ bool NJockey::retrieveSegment()
     return false;
   }
   segment_ = get_segment_srv.response.descriptor;
-  ROS_DEBUG("Received segment %d with %zu landmarks", get_segment_srv.request.id, segment_.landmarks.size());
+  ROS_DEBUG("Received segment %d with %zu landmarks in %.3f s", get_segment_srv.request.id,
+      segment_.landmarks.size(), (ros::Time::now() - start).toSec());
   return true;
 }
 
@@ -265,12 +267,18 @@ double NJockey::saturate(double w) const
     w = -max_angular_velocity_;
   }
 
-  // Dead-zone management.
-  if ((w > 0) && (w < min_angular_velocity_))
+  // Dead-zone management. Always used if not start_angle_reached_. If
+  // start_angle_reached_, only used if forward_velocity_ is 0.
+  double v = forward_velocity_;
+  if (!start_angle_reached_)
+  {
+    v = 0;
+  }
+  if ((std::abs(v) < 1e-10) && (0 < w) && (w < min_angular_velocity_))
   {
     w = min_angular_velocity_;
   }
-  else if ((w < 0) && (w > -min_angular_velocity_))
+  else if ((std::abs(v) < 1e-10) && (-min_angular_velocity_ < w) && (w < 0))
   {
     w = -min_angular_velocity_;
   }
@@ -279,7 +287,7 @@ double NJockey::saturate(double w) const
 
 /* Return the number of matched landmarks and the angular deviation to learned path
  */
-size_t NJockey::processImage(const sensor_msgs::ImageConstPtr& image, double& w)
+size_t NJockey::processImage(const sensor_msgs::ImageConstPtr& image, double& dtheta)
 {
   vector<KeyPoint> keypoints;
   vector<Feature> descriptors;
@@ -290,7 +298,7 @@ size_t NJockey::processImage(const sensor_msgs::ImageConstPtr& image, double& w)
   catch (std::exception)
   {
     ROS_ERROR("Error caught on extract_features, ignoring image");
-    w = 0;
+    dtheta = 0;
     return 0;
   }
   ROS_DEBUG("Number of detected features: %zu", keypoints.size());
@@ -301,7 +309,7 @@ size_t NJockey::processImage(const sensor_msgs::ImageConstPtr& image, double& w)
 
   if (landmarks.empty())
   {
-    w = 0;
+    dtheta = 0;
     return 0;
   }
   
@@ -309,11 +317,10 @@ size_t NJockey::processImage(const sensor_msgs::ImageConstPtr& image, double& w)
 
   if (dthetas.empty())
   {
-    w = 0;
+    dtheta = 0;
     return 0;
   }
   
-  double dtheta = 0;
   double min_value = *std::min_element(dthetas.begin(), dthetas.end());
   double max_value = *std::max_element(dthetas.begin(), dthetas.end());
   int num_bins = std::max(1, (int)(max_value - min_value) / histogram_bin_size_);
@@ -349,8 +356,9 @@ size_t NJockey::processImage(const sensor_msgs::ImageConstPtr& image, double& w)
 
   ROS_DEBUG("Highest bin density: %.1f %%", histogram[hist_max_i].second * 100.0);
   ROS_DEBUG("Position difference with highest density: %.3f pixels", dtheta);
+  ROS_DEBUG("Traveled distance %.3f m / %.3f m", d, segment_.distance);
 
-  return dtheta;
+  return (size_t) std::ceil(histogram[hist_max_i].second * dthetas.size());
 }
 
 vector<Landmark> NJockey::select_tracked_landmarks(double d) const

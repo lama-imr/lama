@@ -40,7 +40,7 @@ bool ANJockey::initMapSegmentInterface()
   client.waitForExistence();
   lama_interfaces::AddInterface srv;
   srv.request.interface_name = segment_interface_name_;
-  srv.request.interface_type = lama_interfaces::AddInterfaceRequest::CLEARTEXT;
+  srv.request.interface_type = lama_interfaces::AddInterfaceRequest::SERIALIZED;
   srv.request.get_service_message = "featurenav_base/GetSegment";
   srv.request.set_service_message = "featurenav_base/SetSegment";
   if (!client.call(srv))
