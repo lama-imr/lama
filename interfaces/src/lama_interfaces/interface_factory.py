@@ -23,8 +23,10 @@ class DBInterface(AbstractDBInterface):
         # Make the transaction.
         id_ = msg.id
         query = self.table.select(whereclause=(self.table.c.id == id_))
-        with self.connection.begin():
-            result = self.connection.execute(query).fetchone()
+        connection = self.engine.connect()
+        with connection.begin():
+            result = connection.execute(query).fetchone()
+        connection.close()
         if not result:
             err = 'No element with id {} in database table {}'.format(
                 id_, self.table.name)
@@ -41,8 +43,10 @@ class DBInterface(AbstractDBInterface):
 
         # Make the transaction.
         insert_args = {'serialized_content': buf.getvalue()}
-        with self.connection.begin():
-            result = self.connection.execute(self.table.insert(), insert_args)
+        connection = self.engine.connect()
+        with connection.begin():
+            result = connection.execute(self.table.insert(), insert_args)
+        connection.close()
         return_id = result.inserted_primary_key[0]
 
         # Return a setter response instance with the descriptor identifier.

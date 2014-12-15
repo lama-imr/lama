@@ -302,6 +302,132 @@ def setMsgArgFromTable(msg, value, tablename, field='', seq_nums=[],
     return
 
 
+def parentSeqs(ids, name):
+    """Return the sequence of parent ids for a _value_
+
+    Helper function for SqlMsg.getter and SqlMsg.setter.
+    Parameters
+    ----------
+    - ids: dict, a map "(table, seq_nums): id".
+    """
+    seqs = []
+    for this_name, this_seq in ids.iterkeys():
+        if this_name == name:
+            seqs.append(this_seq)
+    return seqs
+
+
+def setRosFields(msg, sqlresult, rossqltable, seq_nums):
+    """Set an attribute of msg
+
+    Helper function for SqlMsg.getter.
+
+    Parameters
+    ----------
+    - msg: an instance of ROS message.
+    - sqlresult: an SQL select.fetchone() result.
+    - rossqltable: an instance of RosSqlTable.
+    - seq_nums: a list of ordered seq_num, from parent to child.
+    """
+    for field in rossqltable.sqlrosfields:
+        setMsgArgFromTable(msg,
+                           sqlresult[field],
+                           rossqltable.name,
+                           field=field,
+                           seq_nums=seq_nums)
+
+
+def getFromTable(msg, rossqltable, ids, connection):
+    """Retrieve information from the database
+
+    Helper function for SqlMsg.getter.
+
+    Parameters
+    ----------
+    - msg: an instance of ROS message.
+    - rossqltable: an instance of RosSqlTable.
+    - ids: dict, a map "(table, seq_nums): id".
+    - connection: an sqlalchemy engine connection instance.
+    """
+    sqltable = rossqltable.sqltable
+    parent_seqs = parentSeqs(ids, rossqltable.parenttable)
+    for seq in parent_seqs:
+        parent_id = ids[rossqltable.parenttable, seq]
+        query = sqltable.select(
+            whereclause=(sqltable.c.parent_id == parent_id))
+        # print(query)
+        results = connection.execute(query).fetchall()
+        if not results:
+            # parent_id is not a valid parent index, this means that
+            # the array is empty and that we can skip this parent_id.
+            rospy.logdebug('Empty field: {}'.format(rossqltable.name))
+            continue
+        for result in results:
+            id_ = result['id']
+            seq_num = result['seq_num']
+            new_seq = seq + (seq_num,)
+            ids[rossqltable.name, new_seq] = id_
+            insp = TypeInspector(rossqltable.rosbasetype)
+            if insp.is_message:
+                # Create a new message and add it to the list.
+                setMsgArgFromTable(msg=msg,
+                                   value=insp.msg_class(),
+                                   tablename=rossqltable.name,
+                                   seq_nums=new_seq)
+            setRosFields(msg, result, rossqltable, new_seq)
+
+
+def addRosFields(insert_args, msg, rossqltable, seq_nums):
+    """Insert an argument for a SQL insert argument dictionnary
+
+    Helper function for SqlMsg.setter.
+
+    Parameters
+    ----------
+    - insert_args: an argument dictionnary for a SQL insert statement.
+    - msg: an instance of ROS message.
+    - rossqltable: an instance of RosSqlTable.
+    - seq_nums: a list of ordered seq_num, from parent to child.
+    """
+    for field in rossqltable.sqlrosfields:
+        insert_args[field] = getMsgArgFromTable(msg,
+                                                rossqltable.name,
+                                                field=field,
+                                                seq_nums=seq_nums)
+
+
+def insertInTable(msg, rossqltable, ids, connection):
+    """Write data to the database, written fields are in rossqltable
+
+    Helper function for SqlMsg.setter.
+
+    Parameters
+    ----------
+    - msg: an instance of ROS message.
+    - rossqltable: an instance of RosSqlTable.
+    - ids: dict, a map "(table, seq_nums): id".
+    - connection: an sqlalchemy engine connection instance.
+    """
+    insert_args = {}
+    parent_seqs = parentSeqs(ids, rossqltable.parenttable)
+    for seq in parent_seqs:
+        # Remove the last _suffix_for_array_table
+        suffix = '@' + _suffix_for_array_table
+        if suffix in rossqltable.name:
+            name, _ = rossqltable.name.rsplit(suffix, 1)
+        else:
+            name = rossqltable.name
+        parentmsg = getMsgArgFromTable(msg, name, seq_nums=seq)
+        for seq_num in range(len(parentmsg)):
+            insert_args['parent_id'] = ids[rossqltable.parenttable, seq]
+            insert_args['seq_num'] = seq_num
+            new_seq = seq + (seq_num,)
+            addRosFields(insert_args, msg, rossqltable, new_seq)
+            result = connection.execute(rossqltable.sqltable.insert(),
+                                        insert_args)
+            ids[rossqltable.name, new_seq] = (result.inserted_primary_key[0])
+
+
 class TypeInspector(object):
     """Inspector for a ROS message or a ROS type
 
@@ -599,53 +725,6 @@ class SqlMsg(object):
         ----------
         - connection: sqlalchemy engine connection instance.
         """
-        def parentSeqs(ids, name):
-            seqs = []
-            for this_name, this_seq in ids.iterkeys():
-                if this_name == name:
-                    seqs.append(this_seq)
-            return seqs
-
-        def setRosFields(msg, sqlresult, rossqltable, seq_nums):
-            for field in rossqltable.sqlrosfields:
-                # print(msg)
-                # print(rossqltable.name)
-                # print(field)
-                # print(seq_nums)
-                setMsgArgFromTable(msg,
-                                   sqlresult[field],
-                                   rossqltable.name,
-                                   field=field,
-                                   seq_nums=seq_nums)
-
-        def getFromTable(msg, rossqltable):
-            sqltable = rossqltable.sqltable
-            parent_seqs = parentSeqs(ids, rossqltable.parenttable)
-            for seq in parent_seqs:
-                parent_id = ids[rossqltable.parenttable, seq]
-                query = sqltable.select(
-                    whereclause=(sqltable.c.parent_id == parent_id))
-                # print(query)
-                results = connection.execute(query).fetchall()
-                if not results:
-                    # parent_id is not a valid parent index, this means that
-                    # the array is empty and that we can skip this parent_id.
-                    rospy.logdebug('Empty field: {}'.format(rossqltable.name))
-                    continue
-                for result in results:
-                    id_ = result['id']
-                    seq_num = result['seq_num']
-                    new_seq = seq + (seq_num,)
-                    ids[rossqltable.name, new_seq] = id_
-                    insp = TypeInspector(rossqltable.rosbasetype)
-                    if insp.is_message:
-                        # Create a new message and add it to the list.
-                        setMsgArgFromTable(msg=msg,
-                                           value=insp.msg_class(),
-                                           tablename=rossqltable.name,
-                                           seq_nums=new_seq)
-                    setRosFields(msg, result, rossqltable, new_seq)
-
         # ids is a map (table, seq_nums): ids.
         ids = {}
 
@@ -656,7 +735,7 @@ class SqlMsg(object):
         rossqltable = self.tables[0]
         sqltable = rossqltable.sqltable
         query = sqltable.select(whereclause=(sqltable.c.id == id_))
-        result = dict(connection.execute(query).fetchone())
+        result = connection.execute(query).fetchone()
         if result is None:
             rospy.logerr('No id {} in table {}'.format(id_, rossqltable.name))
             transaction.rollback()
@@ -679,7 +758,7 @@ class SqlMsg(object):
 
         # All other tables are arrays.
         for rossqltable in self.tables[1:]:
-            getFromTable(msg, rossqltable)
+            getFromTable(msg, rossqltable, ids, connection)
 
         transaction.commit()
         return msg
@@ -692,45 +771,6 @@ class SqlMsg(object):
         - connection: sqlalchemy engine connection instance.
         - msg: instance of ROS message.
         """
-        def parentSeqs(ids, name):
-            seqs = []
-            for this_name, this_seq in ids.iterkeys():
-                if this_name == name:
-                    seqs.append(this_seq)
-            return seqs
-
-        def addRosFields(insert_args, msg, rossqltable, seq_nums):
-            for field in rossqltable.sqlrosfields:
-                insert_args[field] = getMsgArgFromTable(msg,
-                                                        rossqltable.name,
-                                                        field=field,
-                                                        seq_nums=seq_nums)
-
-        def insertInTable(msg, rossqltable):
-            insert_args = {}
-            parent_seqs = parentSeqs(ids, rossqltable.parenttable)
-            for seq in parent_seqs:
-                # Remove the last _suffix_for_array_table
-                suffix = '@' + _suffix_for_array_table
-                if suffix in rossqltable.name:
-                    name, _ = rossqltable.name.rsplit(suffix,
-                                                      1)
-                else:
-                    name = rossqltable.name
-                parentmsg = getMsgArgFromTable(msg,
-                                               name,
-                                               seq_nums=seq)
-                for seq_num in range(len(parentmsg)):
-                    insert_args['parent_id'] = ids[rossqltable.parenttable,
-                                                   seq]
-                    insert_args['seq_num'] = seq_num
-                    new_seq = seq + (seq_num,)
-                    addRosFields(insert_args, msg, rossqltable, new_seq)
-                    result = connection.execute(rossqltable.sqltable.insert(),
-                                                insert_args)
-                    ids[rossqltable.name, new_seq] = (
-                        result.inserted_primary_key[0])
-
         transaction = connection.begin()
 
         # ids is a map (table, seq_nums): id. seq_nums is the tuple of sequence
@@ -751,7 +791,7 @@ class SqlMsg(object):
 
         # Treat other tables.
         for rossqltable in self.tables[1:]:
-            insertInTable(msg, rossqltable)
+            insertInTable(msg, rossqltable, ids, connection)
 
         transaction.commit()
         return return_id
@@ -790,7 +830,9 @@ class DBInterface(AbstractDBInterface):
         """Execute the getter service and return the response"""
         # Create an instance of response.
         response = self.getter_service_class._response_class()
-        result = self.sqlmsg.getter(self.connection, msg.id)
+        connection = self.engine.connect()
+        result = self.sqlmsg.getter(connection, msg.id)
+        connection.close()
         response.descriptor = result
         return response
 
@@ -798,7 +840,9 @@ class DBInterface(AbstractDBInterface):
         """Execute the setter service and return the reponse"""
         # Create an instance of response.
         response = self.setter_service_class._response_class()
-        id_ = self.sqlmsg.setter(self.connection, msg.descriptor)
+        connection = self.engine.connect()
+        id_ = self.sqlmsg.setter(connection, msg.descriptor)
+        connection.close()
         # Return the descriptor identifier.
         response.id = id_
         self._set_timestamp(rospy.Time.now())

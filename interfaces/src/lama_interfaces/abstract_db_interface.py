@@ -17,11 +17,9 @@ class AbstractDBInterface(object):
     __metaclass__ = ABCMeta
 
     # Database related class attributes.
-    engine = sqlalchemy.create_engine(_engine_name,
-                                      poolclass=sqlalchemy.pool.StaticPool)
+    engine = sqlalchemy.create_engine(_engine_name)
     metadata = sqlalchemy.MetaData()
     metadata.bind = engine
-    connection = engine.connect()
 
     def __init__(self, interface_name, getter_srv_type, setter_srv_type,
                  start=False):
@@ -154,8 +152,9 @@ class AbstractDBInterface(object):
         msg_type = self.getter_service_class._response_class._slot_types[0]
 
         query = table.select(whereclause=(table.c.interface_name == name))
-        with self.connection.begin():
-            result = self.connection.execute(query).fetchone()
+        connection = self.engine.connect()
+        with connection.begin():
+            result = connection.execute(query).fetchone()
 
         add_interface = True
         if result:
@@ -178,8 +177,9 @@ class AbstractDBInterface(object):
                 'message_type': msg_type,
                 'interface_type': self.interface_type,
             }
-            with self.connection.begin():
-                self.connection.execute(table.insert(), insert_args)
+            with connection.begin():
+                connection.execute(table.insert(), insert_args)
+        connection.close()
 
     def _get_last_modified(self):
         """Return the date of last modification for this interface
@@ -189,8 +189,10 @@ class AbstractDBInterface(object):
         table = self.interface_table
         name = self.interface_name
         query = table.select(whereclause=(table.c.interface_name == name))
-        with self.connection.begin():
-            result = self.connection.execute(query).fetchone()
+        connection = self.engine.connect()
+        with connection.begin():
+            result = connection.execute(query).fetchone()
+        connection.close()
 
         if not result:
             raise rospy.ServiceException('Corrupted database')
@@ -214,8 +216,10 @@ class AbstractDBInterface(object):
             'timestamp_nsecs': time.nsecs,
         }
         update = table.update().where(table.c.interface_name == name)
-        with self.connection.begin():
-            self.connection.execute(update, update_args)
+        connection = self.engine.connect()
+        with connection.begin():
+            connection.execute(update, update_args)
+        connection.close()
 
     def has_table(self, table):
         """Return true if table is in the database"""

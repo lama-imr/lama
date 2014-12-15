@@ -171,8 +171,10 @@ class CoreDBInterface(AbstractDBInterface):
         # Make the transaction for the core table.
         query = self.core_table.select(
             whereclause=(self.core_table.c.id == id_))
-        with self.connection.begin():
-            result = self.connection.execute(query).fetchone()
+        connection = self.engine.connect()
+        with connection.begin():
+            result = connection.execute(query).fetchone()
+        connection.close()
         if not result:
             err = 'No element with id {} in database table {}'.format(
                 id_, self.core_table.name)
@@ -204,8 +206,10 @@ class CoreDBInterface(AbstractDBInterface):
         # Check for id existence.
         query = self.core_table.select(
             whereclause=(self.core_table.c.id == lama_object.id))
-        with self.connection.begin():
-            result = self.connection.execute(query).fetchone()
+        connection = self.engine.connect()
+        with connection.begin():
+            result = connection.execute(query).fetchone()
+        connection.close()
 
         if result is not None and is_special_vertex:
             # Exit if lama_object is an already-existing special object.
@@ -229,9 +233,11 @@ class CoreDBInterface(AbstractDBInterface):
             # If id is not given, i.e. if it is 0, the database will give it
             # an id automatically (primary key).
             insert_args['id'] = lama_object.id
-        with self.connection.begin():
-            result = self.connection.execute(self.core_table.insert(),
-                                             insert_args)
+        connection = self.engine.connect()
+        with connection.begin():
+            result = connection.execute(self.core_table.insert(),
+                                        insert_args)
+        connection.close()
         object_id = result.inserted_primary_key[0]
 
         self._set_timestamp(rospy.Time.now())
@@ -241,8 +247,10 @@ class CoreDBInterface(AbstractDBInterface):
         """Remove a LamaObject from the database"""
         delete = self.core_table.delete(
             whereclause=(self.core_table.c.id == id_))
-        with self.connection.begin():
-            self.connection.execute(delete)
+        connection = self.engine.connect()
+        with connection.begin():
+            connection.execute(delete)
+        connection.close()
 
     def get_descriptor_links(self, id_, interface_name=None):
         """Retrieve the list of DescriptorLink associated with a Lama object
@@ -265,8 +273,10 @@ class CoreDBInterface(AbstractDBInterface):
         query = query.where(table.c.object_id == id_)
         if interface_name and interface_name != '*':
             query = query.where(table.c.interface_name == interface_name)
-        with self.connection.begin():
-            results = self.connection.execute(query).fetchall()
+        connection = self.engine.connect()
+        with connection.begin():
+            results = connection.execute(query).fetchall()
+        connection.close()
         if not results:
             return []
         for result in results:
@@ -298,7 +308,6 @@ class MapAgentInterface(object):
             self.map_agent_proxy = None
 
         self.core_iface = CoreDBInterface(start=False)
-        self.connection = self.core_iface.connection
 
     def action_callback(self, msg):
         """Callback of ActOnMap service
@@ -399,8 +408,10 @@ class MapAgentInterface(object):
         core_table = self.core_iface.core_table
         query = core_table.select(
             whereclause=(core_table.c.id == object_id))
-        with self.connection.begin():
-            result = self.connection.execute(query).fetchone()
+        connection = self.core_iface.engine.connect()
+        with connection.begin():
+            result = connection.execute(query).fetchone()
+        connection.close()
         if not result:
             err = 'No lama object with id {} in database table {}'.format(
                 object_id, core_table.name)
@@ -418,8 +429,10 @@ class MapAgentInterface(object):
         desc_id = msg.descriptor_id
         query = table.select(
             whereclause=(table.c.id == desc_id))
-        with self.connection.begin():
-            result = self.connection.execute(query).fetchone()
+        connection = self.core_iface.engine.connect()
+        with connection.begin():
+            result = connection.execute(query).fetchone()
+        connection.close()
         if not result:
             err = 'No descriptor with id {} in database table {}'.format(
                 desc_id, table.name)
@@ -434,9 +447,11 @@ class MapAgentInterface(object):
             'timestamp_secs': time.secs,
             'timestamp_nsecs': time.nsecs,
         }
-        with self.connection.begin():
-            self.connection.execute(self.core_iface.descriptor_table.insert(),
-                                    insert_args)
+        connection = self.core_iface.engine.connect()
+        with connection.begin():
+            connection.execute(self.core_iface.descriptor_table.insert(),
+                               insert_args)
+        connection.close()
 
         response = ActOnMapResponse()
         return response
@@ -468,8 +483,10 @@ class MapAgentInterface(object):
             query = query.where(coretable.c['v1'] == lama_object.references[1])
         rospy.logdebug('SQL query: {}'.format(query))
 
-        with self.connection.begin():
-            results = self.connection.execute(query).fetchall()
+        connection = self.core_iface.engine.connect()
+        with connection.begin():
+            results = connection.execute(query).fetchall()
+        connection.close()
         if not results:
             return []
         objects = []
