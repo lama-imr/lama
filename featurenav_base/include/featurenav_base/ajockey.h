@@ -1,3 +1,46 @@
+/*
+ * Learns a segment, i.e. a series of features with additional information,
+ * with information based on a camera and odometry.
+ *
+ * Long description:
+ * Learns a segment, i.e. a series of features with additional information,
+ * with information based on a camera and odometry. A feature with additional
+ * information is called a landmark. Implemented actions:
+ * - START: will learn new features indefinitely or on at least a configurable
+ *   distance.
+ * - STOP: will interrupt the START action and save the segment.
+ * - INTERRUPT: TODO
+ * - CONTINUE: TODO
+ *
+ * Interaction with the map (created by this jockey):
+ * - [Getter][/][Setter], message type, interface default name
+ *
+ * Interaction with the map (created by other jockeys):
+ * - [Getter][/][Setter], message type, interface default name
+ * - Setter: Segment, the interface name is given by the subclass
+ *
+ * Subscribers (other than map-related):
+ * - message type, topic default name, description
+ * - sensor_msgs/Image (raw), "~/camera/image_raw", image from a front camera.
+ * - nav_msgs::Odometry, "~/odom", Odometry.
+ *
+ * Publishers (other than map-related):
+ * - message type, topic default name, description
+ *
+ * Services used (other than map-related):
+ * - none
+ *
+ * Parameters:
+ * - matcher_max_relative_distance, double, 0.8, a potential descriptor is
+ *   visible in the new image if the distance to the best-match descriptor is
+ *   smaller than the distance to the second best match multiplied by this factor.
+ * - min_landmark_dist, double, 0.020 m, a landmark is saved if it was visible
+ *   on at least such a traveled distance (m).
+ * - max_segment_length, double, 0, the jockey will successfully end the START
+ *   action if the traveled distance is greater than max_segment_length (m).
+ *   Defaults to 0, which means that the START action never finishes.
+ */
+
 #ifndef FEATURENAV_BASE_AJOCKEY_H
 #define FEATURENAV_BASE_AJOCKEY_H
 
@@ -91,6 +134,8 @@ class AJockey : public lama_jockeys::LearningJockey
                                             //!> the distance to the best-match descriptor is smaller than
                                             //!> the distance to the second best match multiplied by this factor.
     double min_landmark_dist_;  //!> A landmark is saved if it was visible on at least such a traveled distance.
+    double max_segment_length_;  //!> The jockey will successfully end the action if the traveled distance is at least this.
+                                 //!> Defaults to 0, which means that the START action never finishes.
 
     // Hard-coded parameters.
     static const ros::Duration max_odom_age_;

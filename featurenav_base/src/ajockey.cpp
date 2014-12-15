@@ -2,7 +2,7 @@
 
 namespace featurenav_base {
 
-const ros::Duration AJockey::max_odom_age_ = ros::Duration(2.0);
+const ros::Duration AJockey::max_odom_age_ = ros::Duration(0.5);
 const ros::Duration AJockey::max_landmark_age_ = ros::Duration(2.0);
 
 AJockey::AJockey(const std::string& name, const std::string& segment_interface_name, const std::string& segment_setter_name) :
@@ -10,6 +10,7 @@ AJockey::AJockey(const std::string& name, const std::string& segment_interface_n
   it_(private_nh_),
   matcher_max_relative_distance_(0.8),
   min_landmark_dist_(0.02),
+  max_segment_length_(0),
   segment_interface_name_(segment_interface_name),
   segment_setter_name_(segment_setter_name),
   has_odom_(false),
@@ -23,9 +24,10 @@ AJockey::AJockey(const std::string& name, const std::string& segment_interface_n
 
   private_nh_.getParam("matcher_max_relative_distance", matcher_max_relative_distance_);
   private_nh_.getParam("min_landmark_dist", min_landmark_dist_);
+  private_nh_.getParam("max_segment_length", max_segment_length_);
 
   ROS_DEBUG_STREAM("Waiting for service \"" << segment_setter_name_ << "\"");
-  segment_setter_proxy_ = nh_.serviceClient< ::featurenav_base::SetSegment>(segment_setter_name_);
+  segment_setter_proxy_ = nh_.serviceClient<SetSegment>(segment_setter_name_);
   segment_setter_proxy_.waitForExistence();
 }
 
@@ -65,6 +67,7 @@ void AJockey::onStartLearn()
 
   // Waiting for the first odometry message.
   ros::Duration(0.2).sleep();
+  ros::spinOnce();
   while (!has_odom_ && ros::ok())
   {
     ros::spinOnce();
@@ -72,7 +75,6 @@ void AJockey::onStartLearn()
     ros::Duration(0.01).sleep();
   }
   ROS_DEBUG("Received odometry");
-  ROS_INFO("Received odometry");
 
   // We got odom_, save as start_pose_.
   start_pose_ = odom_.pose.pose;
@@ -81,18 +83,41 @@ void AJockey::onStartLearn()
 
   image_handler_ = it_.subscribe("camera/image_raw", 1, &AJockey::callback_image, this);
 
+  feedback_.current_state = lama_jockeys::LearnFeedback::LEARNING;
+  feedback_.completion = -1;
+  server_.publishFeedback(feedback_);
+
   ros::Rate r(100);
+  unsigned int feedback_publish_counter = 0;
   while (ros::ok())
   {
     ros::spinOnce();
     if (server_.isPreemptRequested() && !ros::ok())
     {
-      ROS_INFO("%s: Preempted", jockey_name_.c_str());
+      ROS_INFO("Preempted");
       // set the action state to preempted
       // TODO: should the server be preempted?
       // server_.setPreempted();
       break;
     }
+
+    if (std::abs(max_segment_length_) > 1e-10)
+    {
+      const double d = distance_from_start();
+      if ((feedback_publish_counter % 50) == 0)
+      {
+        feedback_.completion = d / max_segment_length_;
+        feedback_.time_elapsed = getCompletionDuration();
+        server_.publishFeedback(feedback_);
+      }
+      if (d > max_segment_length_)
+      {
+        ROS_INFO("Max segment length (%.3f m) reached, successfully finishing", max_segment_length_);
+        onStopLearn();
+        break;
+      }
+    }
+    feedback_publish_counter++;
     r.sleep();
   }
 
@@ -101,11 +126,11 @@ void AJockey::onStartLearn()
 
 void AJockey::onStopLearn()
 {
-  ROS_DEBUG("Received ON_STOP_LEARN");
+  ROS_DEBUG("Received ON_STOP_LEARN or stopping after max segment length reached");
 
   if (server_.isPreemptRequested() && !ros::ok())
   {
-    ROS_INFO("%s: Preempted", jockey_name_.c_str());
+    ROS_INFO("Preempted");
     // set the action state to preempted
     // TODO: should the server be preempted?
     // server_.setPreempted();
@@ -118,9 +143,8 @@ void AJockey::onStopLearn()
   image_handler_.shutdown();
   odom_handler_.shutdown();
 
-  ROS_DEBUG("Waiting for processImage to finish");
-
   // Wait for processImage to finish.
+  ROS_DEBUG("Waiting for processImage to finish");
   ros::Rate r(1000);
   while (ros::ok())
   {
@@ -131,7 +155,6 @@ void AJockey::onStopLearn()
     r.sleep();
     ros::spinOnce();
   }
-
   ROS_DEBUG("processImage finished");
 
   segment_.distance = distance_from_start();
