@@ -114,7 +114,7 @@ void Jockey::handleLaser(const sensor_msgs::LaserScanConstPtr& msg)
 // is not a learning jockey.
 void Jockey::onGetVertexDescriptor()
 {
-  ROS_INFO("%s: Received action GET_VERTEX_DESCRIPTOR", ros::this_node::getName().c_str());
+  ROS_INFO("Received action GET_VERTEX_DESCRIPTOR");
 
   if (server_.isPreemptRequested() && !ros::ok())
   {
@@ -179,8 +179,6 @@ void Jockey::onLocalizeEdge()
 
 void Jockey::onGetDissimilarity()
 {
-  ROS_INFO("%s: Received action GET_DISSIMILARITY", ros::this_node::getName().c_str());
-
   getData();
 
   // Transform the scan into a polygon.
@@ -189,17 +187,14 @@ void Jockey::onGetDissimilarity()
   // Get all scans from database.
   lama_interfaces::ActOnMap srv;
   srv.request.action = lama_interfaces::ActOnMapRequest::GET_VERTEX_LIST;
-  ROS_INFO("%s: calling action GET_VERTEX_LIST", ros::this_node::getName().c_str());
-  if (map_agent_.call(srv))
+  ROS_DEBUG("Calling action GET_VERTEX_LIST");
+  if (!map_agent_.call(srv))
   {
-    ROS_INFO("%s: received response GET_VERTEX_LIST", ros::this_node::getName().c_str());
-  }
-  else
-  {
-    ROS_ERROR("%s: failed to call map agent", ros::this_node::getName().c_str());
+    ROS_ERROR("Failed to call map agent");
     server_.setAborted();
     return;
   }
+  ROS_DEBUG("Received response GET_VERTEX_LIST");
   
   // Iterate over vertices and get the associated Polygon (from the LaserScan).
   std::vector<int32_t> vertices;
@@ -220,16 +215,15 @@ void Jockey::onGetDissimilarity()
     }
     if (desc_srv.response.descriptor_links.size() > 1)
     {
-      ROS_WARN("%s: more than one descriptor with interface %s for vertex %d, taking the first one",
-          ros::this_node::getName().c_str(), laser_interface_name_.c_str(), desc_srv.request.object.id);
+      ROS_WARN("More than one descriptor with interface %s for vertex %d, taking the first one",
+          laser_interface_name_.c_str(), desc_srv.request.object.id);
     }
     // Transform the LaserScan into a Polygon.
     lama_interfaces::GetVectorLaserScan scan_srv;
     scan_srv.request.id = desc_srv.response.descriptor_links[0].descriptor_id;
     if (!laser_descriptor_getter_.call(scan_srv))
     {
-      ROS_ERROR("%s: failed to call %s service", ros::this_node::getName().c_str(),
-          laser_interface_name_.c_str());
+      ROS_ERROR("Failed to call %s service", laser_interface_name_.c_str());
       server_.setAborted();
       return;
     }
@@ -250,8 +244,7 @@ void Jockey::onGetDissimilarity()
     dissimi_srv.request.polygon2 = polygons[i];
     if (!dissimilarity_server_.call(dissimi_srv))
     {
-      ROS_ERROR("%s: failed to call %s", ros::this_node::getName().c_str(),
-          dissimilarity_server_name_.c_str());
+      ROS_ERROR_STREAM("Failed to call " << dissimilarity_server_name_);
       server_.setAborted();
       return;
     }
@@ -259,8 +252,7 @@ void Jockey::onGetDissimilarity()
     result_.fdata.push_back(dissimi_srv.response.raw_dissimilarity);
   }
 
-  ROS_INFO("%s: computed %zu dissimilarities", jockey_name_.c_str(),
-      result_.idata.size());
+  ROS_INFO("Computed %zu dissimilarities", result_.idata.size());
   result_.state = lama_jockeys::LocalizeResult::DONE;
   result_.completion_time = getCompletionDuration();
   server_.setSucceeded(result_);

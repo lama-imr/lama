@@ -25,12 +25,12 @@ class LearningJockey : public Jockey
 
     LearningJockey(const std::string& name);
 
-    virtual void onStartLearn() = 0;
-    virtual void onStopLearn() = 0;
+  protected:
+
+    virtual void onLearn() = 0;
+    virtual void onStop() = 0;
     virtual void onInterrupt();
     virtual void onContinue();
-
-  protected:
 
     // NodeHandle instance must be created before this line. Otherwise strange
     // error may occur (this is done in Jockey).

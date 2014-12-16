@@ -40,10 +40,8 @@ void AJockey::reset()
   image_processing_running_ = false;
 }
 
-void AJockey::onStartLearn()
+void AJockey::onLearn()
 {
-  ROS_DEBUG_STREAM(ros::this_node::getName() << ": received ON_START_LEARN");
-
   if ((canDo == NULL) || (startDo == NULL))
   {
     ROS_ERROR("Internal initialization problem, will not start learning...");
@@ -113,7 +111,7 @@ void AJockey::onStartLearn()
       if (d > max_segment_length_)
       {
         ROS_INFO("Max segment length (%.3f m) reached, successfully finishing", max_segment_length_);
-        onStopLearn();
+        onStop();
         break;
       }
     }
@@ -121,10 +119,10 @@ void AJockey::onStartLearn()
     r.sleep();
   }
 
-  ROS_DEBUG("Exiting onStartLearn");
+  ROS_DEBUG("Exiting onLearn");
 }
 
-void AJockey::onStopLearn()
+void AJockey::onStop()
 {
   ROS_DEBUG("Received ON_STOP_LEARN or stopping after max segment length reached");
 

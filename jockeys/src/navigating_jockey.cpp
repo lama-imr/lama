@@ -43,6 +43,7 @@ void NavigatingJockey::goalCallback(const lama_jockeys::NavigateGoalConstPtr& go
   switch (goal_.action)
   {
     case lama_jockeys::NavigateGoal::STOP:
+      ROS_DEBUG("Received action STOP");
       initAction();
       // Reset the goal, just in case.
       goal_.edge = lama_interfaces::LamaObject();
@@ -50,16 +51,19 @@ void NavigatingJockey::goalCallback(const lama_jockeys::NavigateGoalConstPtr& go
       onStop();
       break;
     case lama_jockeys::NavigateGoal::TRAVERSE:
+      ROS_DEBUG("Received action TRAVERSE");
       initAction();
       goal_.edge = goal->edge;
       goal_.descriptor_link = goal->descriptor_link;
       onTraverse();
       break;
     case lama_jockeys::NavigateGoal::INTERRUPT:
+      ROS_DEBUG("Received action INTERRUPT");
       interrupt();
       onInterrupt();
       break;
     case lama_jockeys::NavigateGoal::CONTINUE:
+      ROS_DEBUG("Received action CONTINUE");
       resume();
       onContinue();
       break;

@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 
   lj_laser::Jockey jockey(localizing_jockey_server, frontier_width);
 
-  ROS_INFO("%s started (with action server %s)", ros::this_node::getName().c_str(), jockey.getName().c_str());
+  ROS_INFO_STREAM(ros::this_node::getName() << " started (with action server " << jockey.getName() << ")");
   ros::spin();
   return 0;
 }

@@ -26,6 +26,8 @@ class LocalizingJockey : public Jockey
 
     LocalizingJockey(const std::string& name);
 
+  protected:
+
     virtual void onGetVertexDescriptor() = 0;
     virtual void onGetEdgesDescriptors() = 0;
     virtual void onLocalizeInVertex() = 0;
@@ -35,8 +37,6 @@ class LocalizingJockey : public Jockey
     virtual void onContinue();
 
     void initAction();
-
-  protected:
 
     // NodeHandle instance must be created before this line. Otherwise strange
     // error may occur (this is done in Jockey).

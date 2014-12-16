@@ -1,8 +1,8 @@
 # Action.
 
 uint32 action
-uint32 START_LEARN=1
-uint32 STOP_LEARN=2
+uint32 LEARN=1
+uint32 STOP=2
 uint32 INTERRUPT=3
 uint32 CONTINUE=4
 ---

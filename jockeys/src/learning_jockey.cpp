@@ -34,18 +34,22 @@ void LearningJockey::goalCallback()
 
   switch (goal_.action)
   {
-    case lama_jockeys::LearnGoal::START_LEARN:
+    case lama_jockeys::LearnGoal::LEARN:
+      ROS_DEBUG("Received action LEARN");
       initAction();
-      onStartLearn();
+      onLearn();
       break;
-    case lama_jockeys::LearnGoal::STOP_LEARN:
-      onStopLearn();
+    case lama_jockeys::LearnGoal::STOP:
+      ROS_DEBUG("Received action STOP");
+      onStop();
       break;
     case lama_jockeys::LearnGoal::INTERRUPT:
+      ROS_DEBUG("Received action INTERRUPT");
       interrupt();
       onInterrupt();
       break;
     case lama_jockeys::LearnGoal::CONTINUE:
+      ROS_DEBUG("Received action CONTINUE");
       resume();
       onContinue();
       break;

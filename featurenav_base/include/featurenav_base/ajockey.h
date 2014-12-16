@@ -87,8 +87,8 @@ class AJockey : public lama_jockeys::LearningJockey
 
   private:
 
-    virtual void onStartLearn();
-    virtual void onStopLearn();
+    virtual void onLearn();
+    virtual void onStop();
     virtual void onInterrupt();
     virtual void onContinue();
 

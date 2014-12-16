@@ -45,12 +45,12 @@ void Jockey::resume()
 
 void Jockey::onInterrupt()
 {
-  ROS_DEBUG("%s: action interrupted", jockey_name_.c_str());
+  ROS_DEBUG("Action interrupted");
 }
 
 void Jockey::onContinue()
 {
-  ROS_DEBUG("%s: action resumed", jockey_name_.c_str());
+  ROS_DEBUG("Action resumed");
 }
 
 ros::Duration Jockey::getCompletionDuration() const
