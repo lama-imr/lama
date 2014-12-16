@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>nj_laser</name>
-  <version>0.0.0</version>
+  <version>0.1.0</version>
   <description>The nj_laser package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
@@ -9,7 +9,7 @@
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
-  <license>MIT</license>
+  <license>BSD</license>
 
 
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>lama_interfaces</name>
-  <version>0.0.0</version>
+  <version>0.1.0</version>
   <description>
 	  The lama_interfaces package provides the interfaces between ROS nodes
 	  (such as jockeys from lama_jockeys) and the map.
@@ -12,7 +12,7 @@
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
-  <license>MIT</license>
+  <license>BSD</license>
 
 
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->

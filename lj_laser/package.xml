@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>lj_laser</name>
-  <version>0.0.0</version>
+  <version>0.1.0</version>
   <description>Localizing jockey from LaserScan
 
 	  Implement a localizing jockey from a LaserScan. The associated descriptor
@@ -11,7 +11,7 @@
   <maintainer email="gael.ecorchard@ciirc.cvut.cz">Gaël Ecorchard</maintainer>
 
 
-  <license>MIT</license>
+  <license>BSD</license>
 
 
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->

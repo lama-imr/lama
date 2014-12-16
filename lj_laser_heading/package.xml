@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>lj_laser_heading</name>
-  <version>0.0.0</version>
+  <version>0.1.0</version>
   <description>Localizing jockey from LaserScan and absolute heading
 
 	  Implement a localizing jockey from a LaserScan and absolute heading.
@@ -15,7 +15,7 @@
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>MIT</license>
+  <license>BSD</license>
 
 
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->

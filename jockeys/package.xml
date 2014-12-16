@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>lama_jockeys</name>
-  <version>0.0.0</version>
+  <version>0.1.0</version>
   <description>The lama_jockeys package contains base classes for learning,
   localizing, and navigating jockeys.</description>
 
@@ -11,7 +11,7 @@
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
-  <license>MIT</license>
+  <license>BSD</license>
 
 
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->
