@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<package>
+  <name>lama_core</name>
+  <version>0.1.0</version>
+  <description>Framework for robot autonomy in Large Maps (LaMa), core functionalities</description>
+
+  <maintainer email="gael.ecorchard@ciirc.cvut.cz">Gaël Ecorchard</maintainer>
+
+
+  <license>BSD</license>
+
+
+  <!-- Url tags are optional, but mutiple are allowed, one per tag -->
+  <!-- Optional attribute type can be: website, bugtracker, or repository -->
+  <!-- Example: -->
+  <!-- <url type="website">http://wiki.ros.org/lama</url> -->
+
+
+  <author email="gael.ecorchard@ciirc.cvut.cz">Gaël Ecorchard</author>
+  <author email="kosnar@labe.felk.cvut.cz">Karel Košnar</author>
+  <author email="vonasek@labe.felk.cvut.cz">Vojtěch Vonásek</author>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>lama_interfaces</run_depend>
+  <run_depend>lama_jockeys</run_depend>
+  <run_depend>lama_msgs</run_depend>
+
+
+  <export>
+    <metapackage/>
+  </export>
+</package>
