@@ -1,5 +1,6 @@
 <launch>
     <include file="$(find lama_interfaces)/launch/init_lama.launch" />
 
-    <test test-name="test_lama_core" pkg="lama_interfaces" type="test_lama_core.py" />
+    <test test-name="lama_core" name="test_lama_core" pkg="lama_interfaces" type="test_core.py"
+       time-limit="5.0" />
 </launch>

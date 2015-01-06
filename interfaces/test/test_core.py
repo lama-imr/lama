@@ -1,8 +1,11 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Unit tests for core_interface.py
+
+import unittest
 
 import rospy
 
-import unittest
 from lama_interfaces.msg import LamaObject
 from lama_interfaces.srv import ActOnMap
 from lama_interfaces.srv import ActOnMapRequest
@@ -50,6 +53,7 @@ edge3.type = LamaObject.EDGE
 
 class TestCoreInterface(unittest.TestCase):
     def __init__(self, *args, **kwargs):
+        rospy.init_node('test_lama_core', anonymous=True)
         self.map_agent = rospy.ServiceProxy('lama_map_agent', ActOnMap)
         self.map_agent.wait_for_service()
         super(TestCoreInterface, self).__init__(*args, **kwargs)
@@ -364,9 +368,6 @@ class TestCoreInterface(unittest.TestCase):
 
 if __name__ == '__main__':
     import rostest
-    rostest.rosrun('lama_core_interface', 'test_core_interface',
+    rostest.rosrun('lama_interfaces',
+                   'test_core_interface',
                    TestCoreInterface)
-
-    import rosunit
-    rosunit.unitrun('lama_core_interface', 'test_core_interface',
-                    TestCoreInterface)

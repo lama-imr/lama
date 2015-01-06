@@ -1,0 +1,5 @@
+<launch>
+    <include file="$(find lama_interfaces)/launch/init_lama.launch" />
+
+    <test test-name="lama_interfaces_cleartext" pkg="lama_interfaces" type="test_interfaces_cleartext.py" />
+</launch>

@@ -1,10 +1,10 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 from math import pi
 import unittest
 
 import rospy
-import rospkg
 import roslib.message
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Pose
@@ -12,7 +12,6 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Polygon
 from geometry_msgs.msg import Point32
 
-import lama_interfaces
 from lama_interfaces.interface_factory import interface_factory
 from lama_interfaces.cleartext_interface_factory import cleartext_interface_factory
 from lama_interfaces.srv import GetDoubleRequest
@@ -22,12 +21,6 @@ from lama_interfaces.srv import GetVectorPoseRequest
 from lama_interfaces.srv import GetVectorOdometryRequest
 from lama_interfaces.srv import GetPolygonRequest
 
-home_dir = rospkg.get_ros_home()
-
-lama_interfaces.interface_factory._engine_name = (
-    'sqlite:///{}/lama.sqlite'.format(home_dir))
-lama_interfaces.cleartext_interface_factory._engine_name = (
-    'sqlite:///{}/lama.sqlite'.format(home_dir))
 
 class RosTestCase(unittest.TestCase):
     def assertMsgEqual(self, msg0, msg1):
@@ -59,6 +52,10 @@ class RosTestCase(unittest.TestCase):
 
 class DbMessagePassingBase(object):
     """test setting and getting several descriptors"""
+    def __init__(self, *args, **kwargs):
+        rospy.init_node('test_lama_core', anonymous=True)
+        super(DbMessagePassingBase, self).__init__(*args, **kwargs)
+
     def test_double(self):
         """Test for a message as a list or tuple"""
         interface_name = 'double_' + self.interface_type
@@ -66,7 +63,6 @@ class DbMessagePassingBase(object):
         setter_service = 'lama_interfaces/SetDouble'
 
         # Set up node as well as getter and setter services.
-        rospy.init_node('lama_interfaces', anonymous=True)
         iface = self.interface_factory(interface_name,
                                        getter_service,
                                        setter_service)
@@ -94,7 +90,6 @@ class DbMessagePassingBase(object):
         setter_service = 'lama_interfaces/SetVectorDouble'
 
         # Set up node as well as getter and setter services.
-        rospy.init_node('lama_interfaces', anonymous=True)
         iface = self.interface_factory(interface_name,
                                        getter_service,
                                        setter_service)
@@ -134,7 +129,6 @@ class DbMessagePassingBase(object):
         setter_service = 'lama_interfaces/SetVectorLaserScan'
 
         # Set up node as well as getter and setter services.
-        rospy.init_node('lama_interfaces', anonymous=True)
         iface = self.interface_factory(interface_name,
                                        getter_service,
                                        setter_service)
@@ -183,7 +177,6 @@ class DbMessagePassingBase(object):
         setter_service = 'lama_interfaces/SetVectorPose'
 
         # Set up node as well as getter and setter services.
-        rospy.init_node('lama_interfaces', anonymous=True)
         iface = self.interface_factory(interface_name,
                                        getter_service,
                                        setter_service)
@@ -225,7 +218,6 @@ class DbMessagePassingBase(object):
         setter_service = 'lama_interfaces/SetVectorOdometry'
 
         # Set up node as well as getter and setter services.
-        rospy.init_node('lama_interfaces', anonymous=True)
         iface = self.interface_factory(interface_name,
                                        getter_service,
                                        setter_service)
@@ -300,7 +292,6 @@ class DbMessagePassingBase(object):
         setter_service = 'lama_interfaces/SetPolygon'
 
         # Set up node as well as getter and setter services.
-        rospy.init_node('lama_interfaces', anonymous=True)
         iface = self.interface_factory(interface_name,
                                        getter_service,
                                        setter_service)
@@ -364,6 +355,6 @@ if __name__ == '__main__':
     rostest.rosrun('lama_interfaces',
                    'test_db_message_passing_serialized',
                    TestDbMessagePassingSerialized)
-    rostest.rosrun('lama_interfaces',
-                   'test_db_message_passing_cleartext',
-                   TestDbMessagePassingCleartext)
+    #rostest.rosrun('lama_interfaces',
+    #               'test_db_message_passing_cleartext',
+    #               TestDbMessagePassingCleartext)
