@@ -13,7 +13,9 @@
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/lama</url> -->
+  <url type="website">http://wiki.ros.org/Large%20Maps%20Framework</url>
+  <url type="repository">https://github.com/lama-imr/lama.git</url>
+  <url type="bugtracker">https://github.com/lama-imr/lama/issues</url>
 
 
   <author email="gael.ecorchard@ciirc.cvut.cz">Gaël Ecorchard</author>
