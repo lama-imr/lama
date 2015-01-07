@@ -38,8 +38,8 @@
   <run_depend>rospy</run_depend>
   <run_depend>sensor_msgs</run_depend>
 
+  <test_depend>gtest</test_depend>
   <test_depend>python-nose</test_depend>
-  <test_depend>roscpp</test_depend>
 
 
   <export>

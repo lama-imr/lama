@@ -1,0 +1,6 @@
+<launch>
+    <include file="$(find lama_interfaces)/launch/init_lama.launch" />
+
+    <test test-name="lama_interfaces_roscpp" pkg="lama_interfaces" type="lama_interfaces-test"
+       time-limit="5.0" />
+</launch>

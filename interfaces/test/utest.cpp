@@ -42,7 +42,7 @@ bool initMapInterface(const std::string& interface_name,
   srv.request.set_service_message = set_service_message;
   if (!client.call(srv))
   {
-    ROS_ERROR("Failed to create the Lama interface %s", interface_name.c_str());
+    ROS_ERROR_STREAM("Failed to create the Lama interface " << interface_name);
     return false;
   }
   get_service_name = srv.response.get_service_name;
@@ -157,7 +157,7 @@ TEST(TestSuite, testVectorLaserScan)
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "test_cpp_interface_factory");
-	testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
 

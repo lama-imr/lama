@@ -5,19 +5,18 @@ project(lama_interfaces)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED
-	COMPONENTS
-	roscpp
-	rospy
-	message_generation
-	geometry_msgs
-	sensor_msgs
-	nav_msgs
-	)
+  COMPONENTS
+  roscpp
+  rospy
+  message_generation
+  geometry_msgs
+  sensor_msgs
+  nav_msgs
+  )
 
 ## System dependencies are found with CMake's conventions
 #find_package(PkgConfig)
 #pkg_check_modules(SQLITE REQUIRED sqlite3)
-
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -50,31 +49,31 @@ catkin_python_setup()
 
 ## Generate messages in the 'msg' folder
 add_message_files(
-	FILES
-	DescriptorLink.msg
-	LamaObject.msg
-)
+  FILES
+  DescriptorLink.msg
+  LamaObject.msg
+  )
 
 ## Generate services in the 'srv' folder
 add_service_files(
-	FILES
-	AddInterface.srv
-	ActOnMap.srv
-	GetLamaObject.srv
-	SetLamaObject.srv
-	GetPolygon.srv
-	SetPolygon.srv
-	GetDouble.srv
-	SetDouble.srv
-	GetVectorDouble.srv
-	SetVectorDouble.srv
-	GetVectorLaserScan.srv
-	SetVectorLaserScan.srv
-	GetVectorOdometry.srv
-	SetVectorOdometry.srv
-	GetVectorPose.srv
-	SetVectorPose.srv
-)
+  FILES
+  AddInterface.srv
+  ActOnMap.srv
+  GetLamaObject.srv
+  SetLamaObject.srv
+  GetPolygon.srv
+  SetPolygon.srv
+  GetDouble.srv
+  SetDouble.srv
+  GetVectorDouble.srv
+  SetVectorDouble.srv
+  GetVectorLaserScan.srv
+  SetVectorLaserScan.srv
+  GetVectorOdometry.srv
+  SetVectorOdometry.srv
+  GetVectorPose.srv
+  SetVectorPose.srv
+  )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -90,7 +89,7 @@ generate_messages(
   geometry_msgs
   sensor_msgs
   nav_msgs
-)
+  )
 
 ###################################
 ## catkin specific configuration ##
@@ -102,11 +101,11 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-	#INCLUDE_DIRS include
-	#LIBRARIES
-	CATKIN_DEPENDS rospy geometry_msgs sensor_msgs nav_msgs
-	DEPENDS python-sqlalchemy python-nose
-)
+  #INCLUDE_DIRS include
+  #LIBRARIES
+  CATKIN_DEPENDS rospy geometry_msgs sensor_msgs nav_msgs
+  DEPENDS python-sqlalchemy python-nose
+  )
 
 ###########
 ## Build ##
@@ -117,7 +116,7 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
-)
+  )
 
 ## Declare a cpp library
 #add_library(lama_core src/lama_core.cpp)
@@ -172,11 +171,22 @@ include_directories(
 ## Testing ##
 #############
 
-## Add gtest based cpp test target and link libraries
-catkin_add_gtest(${PROJECT_NAME}-test test/utest.cpp)
-if(TARGET ${PROJECT_NAME}-test)
-	target_link_libraries(${PROJECT_NAME}-test ${catkin_LIBRARIES})
+if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+
+  ## Add gtest based cpp test target and link libraries
+  add_rostest_gtest(${PROJECT_NAME}-test test/test_interfaces_roscpp.test test/utest.cpp)
+  if(TARGET ${PROJECT_NAME}-test)
+    target_link_libraries(${PROJECT_NAME}-test ${catkin_LIBRARIES})
+  endif()
+
+  ## Add folders to be run by python nosetests
+  # catkin_add_nosetests(test)
+  foreach(T
+      test/test_core.test
+      test/test_interfaces_serialized.test
+      test/test_interfaces_cleartext.test)
+    add_rostest(${T})
+  endforeach()
 endif()
 
-## Add folders to be run by python nosetests
-catkin_add_nosetests(test)
