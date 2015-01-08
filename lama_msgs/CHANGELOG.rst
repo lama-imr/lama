@@ -2,8 +2,8 @@
 Changelog for package lama_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2015-01-08)
+------------------
 * all: move some messages from lama_interfaces to lama_msgs
   lama_interfaces: update install script
 * Contributors: Gaël Ecorchard
