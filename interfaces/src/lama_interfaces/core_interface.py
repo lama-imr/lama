@@ -12,11 +12,11 @@ import rospy
 import roslib.msgs
 import roslib.message
 
-from lama_interfaces.msg import LamaObject
-from lama_interfaces.msg import DescriptorLink
 from lama_interfaces.srv import ActOnMap
 from lama_interfaces.srv import ActOnMapRequest
 from lama_interfaces.srv import ActOnMapResponse
+from lama_msgs.msg import DescriptorLink
+from lama_msgs.msg import LamaObject
 
 from abstract_db_interface import AbstractDBInterface
 
@@ -46,8 +46,8 @@ class CoreDBInterface(AbstractDBInterface):
             descriptor_table_name = _default_descriptor_table_name
         self.descriptor_table_name = descriptor_table_name
 
-        get_srv_type = 'lama_interfaces/GetLamaObject'
-        set_srv_type = 'lama_interfaces/SetLamaObject'
+        get_srv_type = 'lama_msgs/GetLamaObject'
+        set_srv_type = 'lama_msgs/SetLamaObject'
         super(CoreDBInterface, self).__init__(interface_name,
                                               get_srv_type, set_srv_type,
                                               start=start)

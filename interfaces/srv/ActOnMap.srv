@@ -31,9 +31,9 @@ uint32 GET_NEIGHBOR_VERTICES = 10
 # Retrieve all edges starting at the given vertex (defined in "object").
 uint32 GET_OUTGOING_EDGES = 11
 
-LamaObject object
+lama_msgs/LamaObject object
 int32 descriptor_id
 string interface_name
 ---
-LamaObject[] objects
-DescriptorLink[] descriptor_links
+lama_msgs/LamaObject[] objects
+lama_msgs/DescriptorLink[] descriptor_links

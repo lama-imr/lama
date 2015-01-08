@@ -13,9 +13,6 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Point.h>
 
-#include <lama_interfaces/LamaObject.h>
-#include <lama_interfaces/DescriptorLink.h>
-
 #include <lama_jockeys/jockey.h>
 #include <lama_jockeys/NavigateAction.h>
 #include <lama_jockeys/NavigateGoal.h>

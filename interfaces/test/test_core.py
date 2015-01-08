@@ -6,9 +6,9 @@ import unittest
 
 import rospy
 
-from lama_interfaces.msg import LamaObject
 from lama_interfaces.srv import ActOnMap
 from lama_interfaces.srv import ActOnMapRequest
+from lama_msgs.msg import LamaObject
 
 vertex1 = LamaObject()
 vertex1.id_in_world = 101

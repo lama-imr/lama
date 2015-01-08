@@ -13,8 +13,6 @@
   <license>BSD</license>
 
 
-  <!-- Url tags are optional, but mutiple are allowed, one per tag -->
-  <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <url type="website">http://wiki.ros.org/lama_interfaces</url>
   <url type="repository">https://github.com/lama-imr/lama.git</url>
   <url type="bugtracker">https://github.com/lama-imr/lama/issues</url>
@@ -27,19 +25,24 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>geometry_msgs</build_depend>
+  <build_depend>lama_msgs</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>nav_msgs</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>sensor_msgs</build_depend>
 
   <run_depend>geometry_msgs</run_depend>
+  <run_depend>lama_msgs</run_depend>
   <run_depend>message_runtime</run_depend>
   <run_depend>nav_msgs</run_depend>
+  <run_depend>python-sqlalchemy</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>sensor_msgs</run_depend>
 
   <test_depend>gtest</test_depend>
   <test_depend>python-nose</test_depend>
+  <test_depend>roscpp</test_depend>
+  <test_depend>rostest</test_depend>
 
 
   <export>

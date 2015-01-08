@@ -46,8 +46,8 @@ void NavigatingJockey::goalCallback(const lama_jockeys::NavigateGoalConstPtr& go
       ROS_DEBUG("Received action STOP");
       initAction();
       // Reset the goal, just in case.
-      goal_.edge = lama_interfaces::LamaObject();
-      goal_.descriptor_link = lama_interfaces::DescriptorLink();
+      goal_.edge = lama_msgs::LamaObject();
+      goal_.descriptor_link = lama_msgs::DescriptorLink();
       onStop();
       break;
     case lama_jockeys::NavigateGoal::TRAVERSE:

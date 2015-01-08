@@ -9,6 +9,8 @@
 #include <ros/ros.h>
 
 #include <lama_interfaces/ActOnMap.h>
+#include <lama_msgs/DescriptorLink.h>
+#include <lama_msgs/LamaObject.h>
 
 namespace lama_jockeys
 {
