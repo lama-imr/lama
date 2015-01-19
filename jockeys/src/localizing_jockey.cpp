@@ -20,7 +20,7 @@ void LocalizingJockey::goalCallback(const lama_jockeys::LocalizeGoalConstPtr& go
   // Check that preempt has not been requested by the client.
   if (server_.isPreemptRequested() || !ros::ok())
   {
-    ROS_INFO("%s: Preempted", jockey_name_.c_str());
+    ROS_INFO_STREAM(jockey_name_ << ": Preempted");
     // set the action state to preempted
     server_.setPreempted();
     return;
@@ -73,7 +73,7 @@ void LocalizingJockey::goalCallback(const lama_jockeys::LocalizeGoalConstPtr& go
 
 void LocalizingJockey::preemptCallback()
 {
-  ROS_INFO("%s: Preempted", jockey_name_.c_str());
+  ROS_INFO_STREAM(jockey_name_ << ": Preempted");
   // set the action state to preempted
   server_.setPreempted();
 }
