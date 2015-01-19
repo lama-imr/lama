@@ -3,9 +3,9 @@
 import rospy
 
 from lama_interfaces.core_interface import MapAgentInterface
-from lama_interfaces.msg import LamaObject
 from lama_interfaces.srv import ActOnMap
 from lama_interfaces.srv import ActOnMapRequest
+from lama_msgs.msg import LamaObject
 
 _iface = MapAgentInterface(start=False)
 _map_agent = rospy.ServiceProxy(_iface.action_service_name, ActOnMap)
