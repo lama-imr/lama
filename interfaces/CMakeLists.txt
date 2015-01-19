@@ -169,6 +169,7 @@ if(CATKIN_ENABLE_TESTING)
   ## Add gtest based cpp test target and link libraries
   add_rostest_gtest(${PROJECT_NAME}-test test/test_interfaces_roscpp.test test/utest.cpp)
   if(TARGET ${PROJECT_NAME}-test)
+    add_dependencies(${PROJECT_NAME}-test lama_interfaces_generate_messages_cpp)
     target_link_libraries(${PROJECT_NAME}-test ${catkin_LIBRARIES} ${roscpp_LIBRARIES})
   endif()
 
