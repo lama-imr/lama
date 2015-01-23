@@ -3,11 +3,17 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 import sqlalchemy
 
+import rospkg
 import rospy
 import roslib.message
 
-# sqlalchemy engine (argument to sqlalchemy.create_engine)
-_engine_name = rospy.get_param('/database_engine', 'sqlite:///lama.sqlite')
+# sqlalchemy engine (argument to sqlalchemy.create_engine).
+# Defaults to '"ros_home"/lama.sqlite'.
+ros_home = rospkg.get_ros_home()
+default_engine_name = 'sqlite:///' + ros_home + '/lama.sqlite'
+_engine_name = rospy.get_param('/database_engine', default_engine_name)
+del ros_home
+del default_engine_name
 
 # Table name for type description
 _interfaces_table_name = 'map_interfaces'
