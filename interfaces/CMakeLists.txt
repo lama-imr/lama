@@ -10,11 +10,9 @@ find_package(catkin REQUIRED
   lama_msgs
   message_generation
   nav_msgs
-  rospy
   sensor_msgs
   )
 
-  find_package(roscpp REQUIRED)
 ## System dependencies are found with CMake's conventions
 #find_package(PkgConfig)
 #pkg_check_modules(SQLITE REQUIRED sqlite3)
@@ -167,10 +165,10 @@ if(CATKIN_ENABLE_TESTING)
     ${roscpp_INCLUDE_DIRS}
     )
   ## Add gtest based cpp test target and link libraries
-  add_rostest_gtest(${PROJECT_NAME}-test test/test_interfaces_roscpp.test test/utest.cpp)
-  if(TARGET ${PROJECT_NAME}-test)
-    add_dependencies(${PROJECT_NAME}-test lama_interfaces_generate_messages_cpp)
-    target_link_libraries(${PROJECT_NAME}-test ${catkin_LIBRARIES} ${roscpp_LIBRARIES})
+  add_rostest_gtest(${PROJECT_NAME}_roscpp-test test/test_interfaces_roscpp.test test/utest.cpp)
+  if(TARGET ${PROJECT_NAME}_roscpp-test)
+    add_dependencies(${PROJECT_NAME}_roscpp-test lama_interfaces_generate_messages_cpp)
+    target_link_libraries(${PROJECT_NAME}_roscpp-test ${catkin_LIBRARIES} ${roscpp_LIBRARIES})
   endif()
 
   ## Add folders to be run by python nosetests

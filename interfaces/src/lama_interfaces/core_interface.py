@@ -467,6 +467,7 @@ class MapAgentInterface(object):
         ----------
         - lama_object: an instance of LamaObject
         """
+        # Reset references, just in case.
         if lama_object.type == LamaObject.VERTEX:
             lama_object.references = [0, 0]
 
