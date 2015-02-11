@@ -2,6 +2,11 @@
 Changelog for package lama_jockeys
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.2 (2015-02-11)
+------------------
+* lama_jockeys: cosmetic changes
+* Contributors: Gaël Ecorchard
+
 0.1.1 (2015-01-08)
 ------------------
 * lama_interfaces, lama_jockeys: update install
