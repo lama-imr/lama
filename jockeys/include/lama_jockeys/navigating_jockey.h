@@ -58,9 +58,9 @@ class NavigatingJockey : public Jockey
 
     virtual geometry_msgs::Twist goToGoal(const geometry_msgs::Point& goal);
 
-    double setGoalReached() {goal_reached_ = true;}
-    double unsetGoalReached() {goal_reached_ = false;}
-    double isGoalReached() {return goal_reached_;}
+    void setGoalReached() {goal_reached_ = true;}
+    void unsetGoalReached() {goal_reached_ = false;}
+    bool isGoalReached() {return goal_reached_;}
 
     // NodeHandle instance must be created before this line. Otherwise strange
     // error may occur (this is done in Jockey).
