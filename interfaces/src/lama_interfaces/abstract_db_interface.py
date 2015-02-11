@@ -47,9 +47,9 @@ class AbstractDBInterface(object):
         get_srv_class = roslib.message.get_service_class(getter_srv_type)
         set_srv_class = roslib.message.get_service_class(setter_srv_type)
 
-        rospy.loginfo('Map interface: {} ({},{})'.format(interface_name,
-                                                         getter_srv_type,
-                                                         setter_srv_type))
+        rospy.logdebug('Map interface: {} ({}, {})'.format(interface_name,
+                                                           getter_srv_type,
+                                                           setter_srv_type))
         rospy.logdebug('Getter class {}'.format(get_srv_class))
         rospy.logdebug('Getter request slots: {}'.format(
             get_srv_class._request_class.__slots__))

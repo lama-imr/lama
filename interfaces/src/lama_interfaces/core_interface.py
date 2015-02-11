@@ -120,7 +120,7 @@ class CoreDBInterface(AbstractDBInterface):
         # interface_name)
         self.descriptor_table = table
 
-    def _lama_object_from_result(self, result):
+    def _lama_object_from_query_result(self, result):
         lama_object = LamaObject()
         for attr in self.direct_attributes:
             setattr(lama_object, attr, result[attr])
@@ -180,7 +180,7 @@ class CoreDBInterface(AbstractDBInterface):
                 id_, self.core_table.name)
             raise rospy.ServiceException(err)
 
-        return self._lama_object_from_result(result)
+        return self._lama_object_from_query_result(result)
 
     def set_lama_object(self, lama_object):
         """Add/modify a lama object to the database
@@ -492,7 +492,7 @@ class MapAgentInterface(object):
             return []
         objects = []
         for result in results:
-            lama_object = self.core_iface._lama_object_from_result(result)
+            lama_object = self.core_iface._lama_object_from_query_result(result)
             objects.append(lama_object)
         return objects
 

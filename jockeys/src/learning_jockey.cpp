@@ -60,7 +60,7 @@ void LearningJockey::preemptCallback()
 {
   ROS_INFO_STREAM(jockey_name_ << ": Preempted");
   // set the action state to preempted
-  /* server_.setPreempted(); DISABLED FOR DEBUG */
+  server_.setPreempted();
 }
 
 void LearningJockey::onInterrupt()
