@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>lama_interfaces</name>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
   <description>
 	  The lama_interfaces package provides the interfaces between ROS nodes
 	  (such as jockeys from lama_jockeys) and the map.
