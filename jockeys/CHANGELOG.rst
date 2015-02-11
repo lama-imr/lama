@@ -2,7 +2,7 @@
 Changelog for package lama_jockeys
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.1.2 (2015-02-11)
+0.1.3 (2015-02-11)
 ------------------
 * lama_jockeys: cosmetic changes
 * Contributors: Gaël Ecorchard
