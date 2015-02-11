@@ -37,7 +37,7 @@
   <run_depend>nav_msgs</run_depend>
   <run_depend>python-sqlalchemy</run_depend>
   <run_depend>roslib</run_depend>
-  <run_depend>rospkg</run_depend>
+  <run_depend>python-rospkg</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>sensor_msgs</run_depend>
 
