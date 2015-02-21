@@ -14,10 +14,10 @@
 #include <lama_interfaces/GetVectorLaserScan.h>
 #include <lama_interfaces/SetVectorLaserScan.h>
 
-#define PREPARE_GETTER_SETTER(iface_name, msg) \
+#define PREPARE_GETTER_SETTER(iface_name, msg, iface_type) \
   std::string get_service_name; \
   std::string set_service_name; \
-  if (!initMapInterface(#iface_name, "lama_interfaces/Get" #msg, "lama_interfaces/Set" #msg, get_service_name, set_service_name)) \
+  if (!initMapInterface(#iface_name, "lama_interfaces/Get" #msg, "lama_interfaces/Set" #msg, get_service_name, set_service_name, iface_type)) \
   { \
     throw std::runtime_error("Could not create map interface iface_name"); \
   } \
@@ -27,17 +27,22 @@
   ros::ServiceClient setter = nh.serviceClient<lama_interfaces::Set##msg>(set_service_name); \
   setter.waitForExistence();
 
+#define PREPARE_GETTER_SETTER_SERIALIZED(iface_name, msg) PREPARE_GETTER_SETTER(iface_name, msg, lama_interfaces::AddInterfaceRequest::SERIALIZED)
+#define PREPARE_GETTER_SETTER_CLEARTEXT(iface_name, msg) PREPARE_GETTER_SETTER(iface_name, msg, lama_interfaces::AddInterfaceRequest::CLEARTEXT)
+
 bool initMapInterface(const std::string& interface_name,
     const std::string& get_service_message,
     const std::string& set_service_message,
     std::string& get_service_name,
-    std::string& set_service_name)
+    std::string& set_service_name,
+    uint32_t interface_type)
 {
   ros::NodeHandle nh;
   ros::ServiceClient client = nh.serviceClient<lama_interfaces::AddInterface>("interface_factory");
   client.waitForExistence();
   lama_interfaces::AddInterface srv;
   srv.request.interface_name = interface_name;
+  srv.request.interface_type = interface_type;
   srv.request.get_service_message = get_service_message;
   srv.request.set_service_message = set_service_message;
   if (!client.call(srv))
@@ -55,6 +60,10 @@ testing::AssertionResult headerEqual(const std_msgs::Header& a, const std_msgs::
   if (a.seq != b.seq)
   {
     return testing::AssertionFailure() << "seq differ: " << a.seq << " is not " << b.seq;
+  }
+  if (a.frame_id != b.frame_id)
+  {
+    return testing::AssertionFailure() << "frame_id differ: " << a.frame_id << " is not " << b.frame_id;
   }
 
   // TODO: test all attributes.
@@ -94,9 +103,9 @@ testing::AssertionResult laserScanEqual(sensor_msgs::LaserScan& a, sensor_msgs::
   return testing::AssertionSuccess();
 }
 
-TEST(TestSuite, testVectorDouble)
+TEST(TestSuite, testVectorDoubleSerialized)
 {
-  PREPARE_GETTER_SETTER(double, VectorDouble);
+  PREPARE_GETTER_SETTER_SERIALIZED(test_roscpp_double_serialized, VectorDouble);
 
   lama_interfaces::SetVectorDouble set_srv;
   set_srv.request.descriptor.push_back(45.69);
@@ -115,9 +124,69 @@ TEST(TestSuite, testVectorDouble)
   }
 }
  
-TEST(TestSuite, testVectorLaserScan)
+TEST(TestSuite, testVectorLaserScanSerialized)
 {
-  PREPARE_GETTER_SETTER(laserscan, VectorLaserScan);
+  PREPARE_GETTER_SETTER_SERIALIZED(test_roscpp_laserscan_serialized, VectorLaserScan);
+
+  sensor_msgs::LaserScan scan0;
+  scan0.header.seq = 1;
+  scan0.header.stamp = ros::Time::now();
+  scan0.header.frame_id = "frame0";
+  scan0.angle_min = -M_PI;
+  scan0.angle_max = M_PI;
+  scan0.range_max = 10.;
+  scan0.ranges.push_back(0);
+  scan0.ranges.push_back(1);
+  sensor_msgs::LaserScan scan1;
+  scan1.header.seq = 2;
+  scan1.header.stamp = ros::Time::now();
+  scan1.header.frame_id = "frame1";
+  scan1.angle_min = -M_PI / 2;
+  scan1.angle_max = M_PI / 2;
+  scan1.range_max = 9.;
+  scan1.ranges.push_back(2);
+  scan1.ranges.push_back(3);
+  
+  lama_interfaces::SetVectorLaserScan set_srv;
+  set_srv.request.descriptor.push_back(scan0);
+  set_srv.request.descriptor.push_back(scan1);
+  setter.call(set_srv);
+
+  lama_interfaces::GetVectorLaserScan get_srv;
+  get_srv.request.id = set_srv.response.id;
+  getter.call(get_srv);
+
+  ASSERT_EQ(set_srv.request.descriptor.size(), get_srv.response.descriptor.size());
+  for (size_t i = 0; i < set_srv.request.descriptor.size(); ++i)
+  {
+    EXPECT_TRUE(laserScanEqual(set_srv.request.descriptor[i], get_srv.response.descriptor[i]));
+  }
+}
+
+TEST(TestSuite, testVectorDoubleCleartext)
+{
+  PREPARE_GETTER_SETTER_CLEARTEXT(test_roscpp_double_cleartext, VectorDouble);
+
+  lama_interfaces::SetVectorDouble set_srv;
+  set_srv.request.descriptor.push_back(45.69);
+  set_srv.request.descriptor.push_back(-46.3);
+
+  setter.call(set_srv);
+  
+  lama_interfaces::GetVectorDouble get_srv;
+  get_srv.request.id = set_srv.response.id;
+  getter.call(get_srv);
+
+  ASSERT_EQ(set_srv.request.descriptor.size(), get_srv.response.descriptor.size());
+  for (size_t i = 0; i < set_srv.request.descriptor.size(); ++i)
+  {
+    EXPECT_EQ(set_srv.request.descriptor[i], get_srv.response.descriptor[i]);
+  }
+}
+ 
+TEST(TestSuite, testVectorLaserScanCleartext)
+{
+  PREPARE_GETTER_SETTER_CLEARTEXT(test_roscpp_laserscan_cleartext, VectorLaserScan);
 
   sensor_msgs::LaserScan scan0;
   scan0.header.seq = 1;
