@@ -56,6 +56,8 @@ class NavigatingJockey : public Jockey
     virtual void onInterrupt();
     virtual void onContinue();
 
+    void initAction();
+
     virtual geometry_msgs::Twist goToGoal(const geometry_msgs::Point& goal);
 
     void setGoalReached() {goal_reached_ = true;}
@@ -79,7 +81,6 @@ class NavigatingJockey : public Jockey
     void preemptCallback();
 
     // Change the visibility to avoid double calls.
-    using Jockey::initAction;
     using Jockey::interrupt;
     using Jockey::resume;
 

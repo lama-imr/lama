@@ -41,13 +41,13 @@ class LocalizingJockey : public Jockey
     // NodeHandle instance must be created before this line. Otherwise strange
     // error may occur (this is done in Jockey).
     LocalizeServer server_;
-    lama_jockeys::LocalizeResult result_;
-    lama_jockeys::LocalizeFeedback feedback_;
+    LocalizeResult result_;
+    LocalizeFeedback feedback_;
 
     // In case of INTERRUPT and CONTINUE, the descritptor attribute
     // of current goal are irrelevant.
     // This information needs to be saved for use after a CONTINUE action.
-    lama_jockeys::LocalizeGoal goal_;
+    LocalizeGoal goal_;
 
   private:
 
@@ -55,7 +55,6 @@ class LocalizingJockey : public Jockey
     void preemptCallback();
 
     // Change the visibility to avoid double calls.
-    using Jockey::initAction;
     using Jockey::interrupt;
     using Jockey::resume;
 };

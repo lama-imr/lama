@@ -81,9 +81,7 @@ void LocalizingJockey::preemptCallback()
 void LocalizingJockey::initAction()
 {
   Jockey::initAction();
-  result_.descriptor_links.clear();
-  result_.idata.clear();
-  result_.fdata.clear();
+  result_ = LocalizeResult();
 }
 
 void LocalizingJockey::onInterrupt()

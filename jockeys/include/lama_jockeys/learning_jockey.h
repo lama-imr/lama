@@ -32,16 +32,18 @@ class LearningJockey : public Jockey
     virtual void onInterrupt();
     virtual void onContinue();
 
+    void initAction();
+
     // NodeHandle instance must be created before this line. Otherwise strange
     // error may occur (this is done in Jockey).
     LearnServer server_;
-    lama_jockeys::LearnResult result_;
-    lama_jockeys::LearnFeedback feedback_;
+    LearnResult result_;
+    LearnFeedback feedback_;
 
     // In case of INTERRUPT and CONTINUE, the attributes of current goal
     // are irrelevant.
     // This information needs to be saved for use after a CONTINUE action.
-    lama_jockeys::LearnGoal goal_;
+    LearnGoal goal_;
 
   private:
 
@@ -49,7 +51,6 @@ class LearningJockey : public Jockey
     void preemptCallback();
 
     // Change the visibility to avoid double calls.
-    using Jockey::initAction;
     using Jockey::interrupt;
     using Jockey::resume;
 };

@@ -63,6 +63,12 @@ void LearningJockey::preemptCallback()
   server_.setPreempted();
 }
 
+void LearningJockey::initAction()
+{
+  Jockey::initAction();
+  result_ = LearnResult();
+}
+
 void LearningJockey::onInterrupt()
 {
   ROS_DEBUG_STREAM(jockey_name_ << ": learning interrupted");

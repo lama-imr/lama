@@ -77,6 +77,12 @@ void NavigatingJockey::preemptCallback()
   server_.setPreempted();
 }
 
+void NavigatingJockey::initAction()
+{
+  Jockey::initAction();
+  result_ = NavigateResult();
+}
+
 void NavigatingJockey::onInterrupt()
 {
   ROS_DEBUG("%s: navigating goal %d interrupted", jockey_name_.c_str(), goal_.edge.id);
