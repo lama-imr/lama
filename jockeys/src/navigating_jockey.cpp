@@ -87,7 +87,7 @@ void NavigatingJockey::onContinue()
   ROS_DEBUG("%s: navigating goal %d resumed", jockey_name_.c_str(), goal_.edge.id);
 }
 
-/* Return the twist to reach the given goal pose
+/** Return the twist to reach the given goal pose
  * 
  * There is no cycle in this function, so it should be called periodically by class instances.
  *

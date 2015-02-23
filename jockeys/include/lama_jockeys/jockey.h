@@ -46,11 +46,11 @@ class Jockey
 
   private:
 
-    bool interrupted_;  //!> True if the jockey is interrupted.
-    ros::Time start_time_;  //!> Timestamp when a non-interrupting goal was received
-    ros::Time interruption_time_;  //!> Timestamp when interruption started.
-    ros::Time resume_time_;  //!> Timestamp when normal behavior was resumed.
-    ros::Duration interruptions_duration_;  //!> Total interruption time (not including the current one)
+    bool interrupted_;  //!< True if the jockey is interrupted.
+    ros::Time start_time_;  //!< Timestamp when a non-interrupting goal was received
+    ros::Time interruption_time_;  //!< Timestamp when interruption started.
+    ros::Time resume_time_;  //!< Timestamp when normal behavior was resumed.
+    ros::Duration interruptions_duration_;  //!< Total interruption time (not including the current one)
 };
 
 } // namespace lama_jockeys

@@ -84,12 +84,12 @@ class NavigatingJockey : public Jockey
     using Jockey::resume;
 
     bool goal_reached_;
-    double max_goal_distance_;  //!> If the goal is farther than this distance, stop the robot.
-    double max_goal_dtheta_;  //!> The goal angular distance will be limited to this.
-    double kp_v_;  //!> Proportional gain for the linear velocity (s^-1).
-    double kp_w_;  //!> Proportional gain for the angular velocity (s^-1).
-    double min_velocity_;  //!> Minimum set velocity (m.s^-1)
-    double reach_distance_;  //!> Goal is reached if closer than this (m).
+    double max_goal_distance_;  //!< If the goal is farther than this distance, stop the robot.
+    double max_goal_dtheta_;  //!< The goal angular distance will be limited to this.
+    double kp_v_;  //!< Proportional gain for the linear velocity (s^-1).
+    double kp_w_;  //!< Proportional gain for the angular velocity (s^-1).
+    double min_velocity_;  //!< Minimum set velocity (m.s^-1)
+    double reach_distance_;  //!< Goal is reached if closer than this (m).
 };
 
 } // namespace lama_jockeys
