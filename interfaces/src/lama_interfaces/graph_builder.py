@@ -11,8 +11,11 @@ _iface = MapAgentInterface(start=False)
 _map_agent = rospy.ServiceProxy(_iface.action_service_name, ActOnMap)
 
 
-def _get_lama_object_from_id(graph, id_):
-    """Return the LamaObject which is a key of graph and has id_ as id"""
+def get_vertex_from_graph(graph, id_):
+    """Return the vertex which is a key of graph and has id_ as id
+
+    Return a LamaObject
+    """
     for lama_object in graph.iterkeys():
         if lama_object.id == id_:
             return lama_object
@@ -28,18 +31,18 @@ def get_directed_graph():
     All vertices are listed as key. All edges are listed as values.
     """
     # Get the vertices (graph keys).
-    map_action = ActOnMapRequest()
-    map_action.action = map_action.GET_VERTEX_LIST
-    response = _map_agent.call(map_action)
+    response = _map_agent(action=ActOnMapRequest.GET_VERTEX_LIST)
     graph = {}
     for vertex in response.objects:
+        # rospy deserializes arrays as tuples, convert to list.
+        vertex.references = list(vertex.references)
         graph[vertex] = []
     # Get the edges (graph values).
-    map_action = ActOnMapRequest()
-    map_action.action = map_action.GET_EDGE_LIST
-    response = _map_agent.call(map_action)
+    response = _map_agent(action=ActOnMapRequest.GET_EDGE_LIST)
     for edge in response.objects:
-        first_vertex = _get_lama_object_from_id(graph, edge.references[0])
+        # rospy deserializes arrays as tuples, convert to list.
+        edge.references = list(edge.references)
+        first_vertex = get_vertex_from_graph(graph, edge.references[0])
         if first_vertex is None:
             rospy.logerr(('Vertex {} does not exist although ' +
                           'it is the first vertex of edge {}').format(
@@ -73,6 +76,8 @@ def get_edges_with_vertices(v0, v1):
     edges = []
     for edge in response.objects:
         if (edge.references[0] == v0) and (edge.references[1] == v1):
+            # rospy deserializes arrays as tuples, convert to list.
+            edge.references = list(edge.references)
             edges.append(edge)
     return edges
 

@@ -195,7 +195,9 @@ class CoreDBInterface(AbstractDBInterface):
                 raise rospy.ServiceException(
                     'malformed references, length = {}'.format(
                         len(lama_object.references)))
-        if lama_object.type == LamaObject.EDGE and 0 in lama_object.references:
+        if ((lama_object.id == 0) and
+            (lama_object.type == LamaObject.EDGE) and
+            (0 in lama_object.references)):
                 # 0 is undefined and not allowed.
                 raise rospy.ServiceException('edge references cannot be 0')
 
@@ -215,11 +217,20 @@ class CoreDBInterface(AbstractDBInterface):
             # Exit if lama_object is an already-existing special object.
             return lama_object.id
 
-        # Possibly delete any node with the same id.
         if result is not None and not is_new_vertex:
-            self.del_lama_object(lama_object.id)
+            # Update existing Lama Object.
+            object_id = self._update_lama_object(lama_object)
+        else:
+            # Insert new Lama Object.
+            object_id = self._insert_lama_object(lama_object)
 
-        # Insert data into the core table.
+        return object_id
+
+    def _insert_lama_object(self, lama_object):
+        """Insert a new Lama Object into the core table without any checks
+
+        Do not invoke directly, use self.set_lama_object.
+        """
         insert_args = {
             'id_in_world': lama_object.id_in_world,
             'name': lama_object.name,
@@ -229,9 +240,7 @@ class CoreDBInterface(AbstractDBInterface):
             'v0': lama_object.references[0],
             'v1': lama_object.references[1],
         }
-        if not is_new_vertex:
-            # If id is not given, i.e. if it is 0, the database will give it
-            # an id automatically (primary key).
+        if lama_object.id:
             insert_args['id'] = lama_object.id
         connection = self.engine.connect()
         with connection.begin():
@@ -239,9 +248,34 @@ class CoreDBInterface(AbstractDBInterface):
                                         insert_args)
         connection.close()
         object_id = result.inserted_primary_key[0]
-
         self._set_timestamp(rospy.Time.now())
         return object_id
+
+    def _update_lama_object(self, lama_object):
+        """Update a Lama Object without any checks
+
+        Do not invoke directly, use self.set_lama_object.
+        """
+        # Update the core table, if necessary.
+        update_args = {}
+        for attr in self.direct_attributes:
+            v = getattr(lama_object, attr)
+            if v:
+                update_args[attr] = v
+        if lama_object.references[0]:
+            update_args['v0'] = lama_object.references[0]
+        if lama_object.references[1]:
+            update_args['v1'] = lama_object.references[1]
+        if update_args:
+            update = self.core_table.update(
+                whereclause=(self.core_table.c.id == lama_object.id))
+            connection = self.engine.connect()
+            with connection.begin():
+                connection.execute(update, update_args)
+            connection.close()
+
+        self._set_timestamp(rospy.Time.now())
+        return lama_object.id
 
     def del_lama_object(self, id_):
         """Remove a LamaObject from the database"""
@@ -319,12 +353,12 @@ class MapAgentInterface(object):
         - msg: an instance of ActOnMap request.
         """
         # Raise an error if pushing the wrong type.
-        if (msg.action == msg.PUSH_VERTEX and
-            msg.object.type not in [0, msg.object.VERTEX]):
+        if ((msg.action == msg.PUSH_VERTEX) and
+            (msg.object.type not in [0, msg.object.VERTEX])):
             raise rospy.ServiceException(
                 'Action PUSH_VERTEX, LamaObject is not a vertex')
-        if (msg.action == msg.PUSH_EDGE and
-            msg.object.type not in [0, msg.object.EDGE]):
+        if ((msg.action == msg.PUSH_EDGE) and
+            (msg.object.type not in [0, msg.object.EDGE])):
             raise rospy.ServiceException(
                 'Action PUSH_EDGE, LamaObject is not an edge')
 
