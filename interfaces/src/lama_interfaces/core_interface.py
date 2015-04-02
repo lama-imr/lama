@@ -60,6 +60,16 @@ class CoreDBInterface(AbstractDBInterface):
         unvisited_vertex.type = LamaObject.VERTEX
         self.set_lama_object(unvisited_vertex)
 
+        # Add the "unknown" edge. This is used to indicate that the robot
+        # position is unknown because we didn't recognized any vertex yet.
+        unknown_edge = LamaObject()
+        unknown_edge.id = -2
+        unknown_edge.name = 'unknown'
+        unknown_edge.type = LamaObject.EDGE
+        unknown_edge.references[0] = unvisited_vertex.id
+        unknown_edge.references[1] = unvisited_vertex.id
+        self.set_lama_object(unknown_edge)
+
         # Add the "undefined" vertex. This is to ensure that automatically
         # generated ids (primary keys) are greater than 0.
         undefined_vertex = LamaObject()
@@ -201,9 +211,9 @@ class CoreDBInterface(AbstractDBInterface):
                 # 0 is undefined and not allowed.
                 raise rospy.ServiceException('edge references cannot be 0')
 
-        is_undefined_vertex = (lama_object.name == 'undefined')
-        is_special_vertex = lama_object.id < 0 or is_undefined_vertex
-        is_new_vertex = lama_object.id == 0 and not is_undefined_vertex
+        is_undefined = (lama_object.name == 'undefined')
+        is_special_vertex = lama_object.id < 0 or is_undefined
+        is_new_vertex = lama_object.id == 0 and not is_undefined
 
         # Check for id existence.
         query = self.core_table.select(
