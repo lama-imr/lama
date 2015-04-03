@@ -28,11 +28,11 @@ class LocalizingJockey : public Jockey
 
   protected:
 
-    virtual void onGetVertexDescriptor() = 0;
-    virtual void onGetEdgesDescriptors() = 0;
-    virtual void onLocalizeInVertex() = 0;
-    virtual void onLocalizeEdge() = 0;
-    virtual void onGetDissimilarity() = 0;
+    virtual void onGetVertexDescriptor();
+    virtual void onGetEdgesDescriptors();
+    virtual void onLocalizeInVertex();
+    virtual void onLocalizeEdge();
+    virtual void onGetDissimilarity();
     virtual void onInterrupt();
     virtual void onContinue();
 

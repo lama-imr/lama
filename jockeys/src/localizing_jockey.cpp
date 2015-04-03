@@ -84,6 +84,46 @@ void LocalizingJockey::initAction()
   result_ = LocalizeResult();
 }
 
+void LocalizingJockey::onGetVertexDescriptor()
+{
+  ROS_DEBUG("%s: onGetVertexDescriptor not supported", jockey_name_.c_str());
+  result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
+  result_.completion_time = ros::Duration(0.0);
+  server_.setSucceeded(result_);
+}
+
+void LocalizingJockey::onGetEdgesDescriptors()
+{
+  ROS_DEBUG("%s: onGetEdgesDescriptors not supported", jockey_name_.c_str());
+  result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
+  result_.completion_time = ros::Duration(0.0);
+  server_.setSucceeded(result_);
+}
+
+void LocalizingJockey::onLocalizeInVertex()
+{
+  ROS_DEBUG("%s: onLocalizeInVertex not supported", jockey_name_.c_str());
+  result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
+  result_.completion_time = ros::Duration(0.0);
+  server_.setSucceeded(result_);
+}
+
+void LocalizingJockey::onLocalizeEdge()
+{
+  ROS_DEBUG("%s: onLocalizeEdge not supported", jockey_name_.c_str());
+  result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
+  result_.completion_time = ros::Duration(0.0);
+  server_.setSucceeded(result_);
+}
+
+void LocalizingJockey::onGetDissimilarity()
+{
+  ROS_DEBUG("%s: onGetDissimilarity not supported", jockey_name_.c_str());
+  result_.state = lama_jockeys::LocalizeResult::NOT_SUPPORTED;
+  result_.completion_time = ros::Duration(0.0);
+  server_.setSucceeded(result_);
+}
+
 void LocalizingJockey::onInterrupt()
 {
   ROS_DEBUG("%s: localizing goal with lama object %d interrupted", jockey_name_.c_str(), goal_.descriptor_link.object_id);
