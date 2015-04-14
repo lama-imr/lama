@@ -3,8 +3,8 @@
 import rospy
 
 from lama_interfaces.core_interface import core_interface
-from lama_interfaces.interface_factory import interface_factory
-from lama_interfaces.cleartext_interface_factory import cleartext_interface_factory
+from lama_interfaces.interface_factory import DBInterface
+from lama_interfaces.cleartext_interface_factory import DBInterface as CTDBInterface
 from lama_interfaces.srv import AddInterface
 from lama_interfaces.srv import AddInterfaceResponse
 
@@ -12,18 +12,27 @@ from lama_interfaces.srv import AddInterfaceResponse
 def handle_add_interface(req):
     response = AddInterfaceResponse()
     if req.interface_type == req.SERIALIZED:
-        factory = interface_factory
+        Interface = DBInterface
     else:
-        factory = cleartext_interface_factory
+        Interface = CTDBInterface
+
     try:
-        iface = factory(req.interface_name,
-                        req.get_service_message,
-                        req.set_service_message)
+        iface = Interface(req.interface_name,
+                          req.get_service_message,
+                          req.set_service_message)
     except ValueError, e:
         raise rospy.ServiceException('Cannot add interface {}: {}'.format(
             req.interface_name, e))
     response.get_service_name = iface.getter_service_name
     response.set_service_name = iface.setter_service_name
+
+    # Start the services if not already started.
+    getter_proxy = rospy.ServiceProxy(iface.getter_service_name,
+                                      iface.getter_service_class)
+    try:
+        getter_proxy.wait_for_service(0.01)
+    except rospy.ROSException:
+        iface.start_services()
     return response
 
 

@@ -62,10 +62,12 @@ class AbstractDBInterface(object):
             set_srv_class._response_class.__slots__))
 
         # getter class
-        self.getter_service_name = interface_name + '_getter'
+        self.getter_service_name = self.default_getter_service_name(
+            interface_name)
         self.getter_service_class = get_srv_class
         # setter class
-        self.setter_service_name = interface_name + '_setter'
+        self.setter_service_name = self.default_setter_service_name(
+            interface_name)
         self.setter_service_class = set_srv_class
         # interface name
         self.interface_name = interface_name
@@ -78,20 +80,11 @@ class AbstractDBInterface(object):
         # Create new tables.
         self._generate_schema()
 
-        # Start the services.
+        # Possibly start the services.
+        self._getter_service = None
+        self._setter_service = None
         if start:
-            self._getter_service = rospy.Service(self.getter_service_name,
-                                                 self.getter_service_class,
-                                                 self.getter_callback)
-            self._setter_service = rospy.Service(self.setter_service_name,
-                                                 self.setter_service_class,
-                                                 self.setter_callback)
-            rospy.loginfo('Services %s and %s started',
-                          self.getter_service_name, self.setter_service_name)
-
-        else:
-            self._getter_service = None
-            self._setter_service = None
+            self.start_services()
 
         # Get the service clients.
         self.getter_service_proxy = rospy.ServiceProxy(
@@ -100,6 +93,14 @@ class AbstractDBInterface(object):
         self.setter_service_proxy = rospy.ServiceProxy(
             self.setter_service_name,
             self.setter_service_class)
+
+    @classmethod
+    def default_getter_service_name(cls, interface_name):
+        return interface_name + '_getter'
+
+    @classmethod
+    def default_setter_service_name(cls, interface_name):
+        return interface_name + '_setter'
 
     @abstractproperty
     def interface_type(self):
@@ -233,3 +234,13 @@ class AbstractDBInterface(object):
         # Tables can be created by other instances, update and check again.
         self.metadata.reflect()
         return table in self.metadata.tables
+
+    def start_services(self):
+        self._getter_service = rospy.Service(self.getter_service_name,
+                                             self.getter_service_class,
+                                             self.getter_callback)
+        self._setter_service = rospy.Service(self.setter_service_name,
+                                             self.setter_service_class,
+                                             self.setter_callback)
+        rospy.loginfo('Services %s and %s started',
+                      self.getter_service_name, self.setter_service_name)
