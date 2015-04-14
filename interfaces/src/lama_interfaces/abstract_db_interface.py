@@ -89,18 +89,17 @@ class AbstractDBInterface(object):
             rospy.loginfo('Services %s and %s started',
                           self.getter_service_name, self.setter_service_name)
 
-            # Get the service clients.
-            self.getter_service_proxy = rospy.ServiceProxy(
-                self.getter_service_name,
-                self.getter_service_class)
-            self.setter_service_proxy = rospy.ServiceProxy(
-                self.setter_service_name,
-                self.setter_service_class)
         else:
             self._getter_service = None
             self._setter_service = None
-            self.getter_service_proxy = None
-            self.setter_service_proxy = None
+
+        # Get the service clients.
+        self.getter_service_proxy = rospy.ServiceProxy(
+            self.getter_service_name,
+            self.getter_service_class)
+        self.setter_service_proxy = rospy.ServiceProxy(
+            self.setter_service_name,
+            self.setter_service_class)
 
     @abstractproperty
     def interface_type(self):
