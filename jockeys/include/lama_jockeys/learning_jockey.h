@@ -21,11 +21,9 @@ typedef actionlib::SimpleActionServer<lama_jockeys::LearnAction> LearnServer;
 
 class LearningJockey : public Jockey
 {
-  public:
+  protected:
 
     LearningJockey(const std::string& name);
-
-  protected:
 
     virtual void onLearn() = 0;
     virtual void onStop() = 0;

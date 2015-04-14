@@ -27,8 +27,6 @@ class NavigatingJockey : public Jockey
 {
   public:
 
-    NavigatingJockey(const std::string& name);
-
     double get_max_goal_distance() {return max_goal_distance_;}
     void set_max_goal_distance(double d) {max_goal_distance_ = (d > 0) ? d : 0;}
 
@@ -48,6 +46,8 @@ class NavigatingJockey : public Jockey
     void set_reach_distance(double d) {reach_distance_ = (d > 0) ? d : 0;}
 
   protected:
+
+    NavigatingJockey(const std::string& name);
 
     // A daugther class must implement functions corresponding to actions
     // TRAVERSE, and STOP.

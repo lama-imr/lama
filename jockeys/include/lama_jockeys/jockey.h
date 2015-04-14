@@ -19,11 +19,11 @@ class Jockey
 {
   public:
 
-    Jockey(const std::string& name);
-
     std::string getName() const {return jockey_name_;}
 
   protected:
+
+    Jockey(const std::string& name);
 
     virtual void onInterrupt();
     virtual void onContinue();

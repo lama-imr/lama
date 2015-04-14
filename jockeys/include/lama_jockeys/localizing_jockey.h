@@ -22,11 +22,9 @@ typedef actionlib::SimpleActionServer<lama_jockeys::LocalizeAction> LocalizeServ
 
 class LocalizingJockey : public Jockey
 {
-  public:
+  protected:
 
     LocalizingJockey(const std::string& name);
-
-  protected:
 
     virtual void onGetVertexDescriptor();
     virtual void onGetEdgesDescriptors();
