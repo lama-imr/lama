@@ -8,6 +8,9 @@ uint32 CONTINUE=4
 
 lama_msgs/LamaObject edge
 lama_msgs/DescriptorLink descriptor_link
+
+# Pose of the edge start relative to the current robot position.
+geometry_msgs/Pose relative_edge_start
 ---
 # Result.
 

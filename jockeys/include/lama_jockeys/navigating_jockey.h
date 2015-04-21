@@ -10,8 +10,9 @@
 
 #include <ros/ros.h>
 #include <actionlib/server/simple_action_server.h>
-#include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Point.h>
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Twist.h>
 
 #include <lama_jockeys/jockey.h>
 #include <lama_jockeys/NavigateAction.h>

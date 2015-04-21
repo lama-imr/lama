@@ -4,13 +4,17 @@ project(lama_jockeys)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
+set(ROS_DEPENDENCIES
   actionlib
   actionlib_msgs
+  geometry_msgs
   lama_interfaces
   lama_msgs
   message_generation
   roscpp
+  )
+find_package(catkin REQUIRED COMPONENTS
+  ${ROS_DEPENDENCIES}
 )
 
 ## System dependencies are found with CMake's conventions
@@ -52,6 +56,7 @@ add_action_files(
 generate_messages(
   DEPENDENCIES
   actionlib_msgs
+  geometry_msgs
   lama_msgs
 )
 
@@ -75,12 +80,7 @@ catkin_package(
   navigating_jockey
 
   CATKIN_DEPENDS
-  actionlib
-  actionlib_msgs
-  lama_interfaces
-  lama_msgs
-  message_runtime
-  roscpp
+  ${ROS_DEPENDENCIES}
   
   #  DEPENDS system_lib
 )

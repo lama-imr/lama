@@ -48,6 +48,7 @@ void NavigatingJockey::goalCallback(const lama_jockeys::NavigateGoalConstPtr& go
       // Reset the goal, just in case.
       goal_.edge = lama_msgs::LamaObject();
       goal_.descriptor_link = lama_msgs::DescriptorLink();
+      goal_.relative_edge_start = geometry_msgs::Pose();
       onStop();
       break;
     case lama_jockeys::NavigateGoal::TRAVERSE:
@@ -55,6 +56,7 @@ void NavigatingJockey::goalCallback(const lama_jockeys::NavigateGoalConstPtr& go
       initAction();
       goal_.edge = goal->edge;
       goal_.descriptor_link = goal->descriptor_link;
+      goal_.relative_edge_start = goal->relative_edge_start;
       onTraverse();
       break;
     case lama_jockeys::NavigateGoal::INTERRUPT:
