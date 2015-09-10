@@ -333,7 +333,7 @@ class CoreDBInterface(AbstractDBInterface):
 
 
 class MapAgentInterface(object):
-    """Define callbacks for ActOnMap and start the map agent service"""
+    """Define callbacks for ActOnMap and possibly start the map agent service"""
     def __init__(self, start=False):
         action_srv_type = 'lama_interfaces/ActOnMap'
         srv_action_class = roslib.message.get_service_class(action_srv_type)
@@ -352,6 +352,49 @@ class MapAgentInterface(object):
             self.map_agent_proxy = None
 
         self.core_iface = CoreDBInterface(start=False)
+
+    def get_lama_object_list(self, lama_object):
+        """Retrieve all elements that match the search criteria
+
+        Search criteria are attributes of lama_object with non-default values
+        (defaults are 0 or '').
+        Return a list of LamaObject, or an empty list of no LamaObject matches.
+
+        Parameters
+        ----------
+        - lama_object: an instance of LamaObject
+        """
+        # Reset references, because it happens to be a tuple.
+        if lama_object.type == LamaObject.VERTEX:
+            lama_object.references = [0, 0]
+
+        coretable = self.core_iface.core_table
+        query = coretable.select()
+        # We exclude the undefined node.
+        query = query.where(coretable.c['id'] != 0)
+        for attr in self.core_iface.direct_attributes:
+            v = getattr(lama_object, attr)
+            if v:
+                # Only add a "where" clause, where the attribute is non-default
+                # (i.e. neither 0 nor '').
+                query = query.where(coretable.c[attr] == v)
+        if lama_object.references[0]:
+            query = query.where(coretable.c['v0'] == lama_object.references[0])
+        if lama_object.references[1]:
+            query = query.where(coretable.c['v1'] == lama_object.references[1])
+        rospy.logdebug('SQL query: {}'.format(query))
+
+        connection = self.core_iface.engine.connect()
+        with connection.begin():
+            results = connection.execute(query).fetchall()
+        connection.close()
+        if not results:
+            return []
+        objects = []
+        for result in results:
+            lama_object = self.core_iface._lama_object_from_query_result(result)
+            objects.append(lama_object)
+        return objects
 
     def action_callback(self, msg):
         """Callback of ActOnMap service
@@ -499,46 +542,6 @@ class MapAgentInterface(object):
 
         response = ActOnMapResponse()
         return response
-
-    def get_lama_object_list(self, lama_object):
-        """Retrieve all elements that match the search criteria
-
-        Search criteria are attributes of lama_object with non-default values
-        (0 or '').
-        Return a list of LamaObject, or an empty list of no LamaObject matches.
-
-        Parameters
-        ----------
-        - lama_object: an instance of LamaObject
-        """
-        # Reset references, just in case.
-        if lama_object.type == LamaObject.VERTEX:
-            lama_object.references = [0, 0]
-
-        coretable = self.core_iface.core_table
-        query = coretable.select()
-        query = query.where(coretable.c['id'] != 0)
-        for attr in self.core_iface.direct_attributes:
-            v = getattr(lama_object, attr)
-            if v:
-                query = query.where(coretable.c[attr] == v)
-        if lama_object.references[0]:
-            query = query.where(coretable.c['v0'] == lama_object.references[0])
-        if lama_object.references[1]:
-            query = query.where(coretable.c['v1'] == lama_object.references[1])
-        rospy.logdebug('SQL query: {}'.format(query))
-
-        connection = self.core_iface.engine.connect()
-        with connection.begin():
-            results = connection.execute(query).fetchall()
-        connection.close()
-        if not results:
-            return []
-        objects = []
-        for result in results:
-            lama_object = self.core_iface._lama_object_from_query_result(result)
-            objects.append(lama_object)
-        return objects
 
     def get_vertex_list(self, msg):
         """Retrieve all vertices from the database
