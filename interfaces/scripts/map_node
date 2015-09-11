@@ -2,7 +2,7 @@
 
 import rospy
 
-from lama_interfaces.core_interface import core_interface
+from lama_interfaces.core_interface import map_agent_interface
 from lama_interfaces.interface_factory import DBInterface
 from lama_interfaces.cleartext_interface_factory import DBInterface as CTDBInterface
 from lama_interfaces.srv import AddInterface
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     rospy.init_node('lama_interfaces', log_level=rospy.INFO)
 
     # Add the core interface for LamaObject and DescriptorLink objects.
-    core_interface()
+    map_agent_interface()
 
     # Add the server for AddInterface.
     s = rospy.Service('interface_factory', AddInterface, handle_add_interface)

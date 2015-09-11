@@ -23,6 +23,7 @@ class AbstractDBInterface(object):
     __metaclass__ = ABCMeta
 
     # Database related class attributes.
+    engine_name = _engine_name
     engine = sqlalchemy.create_engine(_engine_name)
     metadata = sqlalchemy.MetaData()
     metadata.bind = engine

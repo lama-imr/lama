@@ -345,13 +345,12 @@ class MapAgentInterface(object):
             self.map_agent = rospy.Service(self.action_service_name,
                                            self.action_service_class,
                                            self.action_callback)
-            self.map_agent_proxy = rospy.ServiceProxy(self.action_service_name,
-                                                      ActOnMap)
         else:
             self.map_agent = None
-            self.map_agent_proxy = None
+        self.map_agent_proxy = rospy.ServiceProxy(self.action_service_name,
+                                                  ActOnMap)
 
-        self.core_iface = CoreDBInterface(start=False)
+        self.core_iface = CoreDBInterface(start=start)
 
     def get_lama_object_list(self, lama_object):
         """Retrieve all elements that match the search criteria
@@ -627,8 +626,8 @@ class MapAgentInterface(object):
         return self.get_edge_list(msg_get_edges)
 
 
-def core_interface():
-    """Return an interface and a map agent classes and run associated services
+def map_agent_interface():
+    """Return an interface of map agent iterface and run associated services
 
     Generate an interface class and run the getter, setter, and action services.
     Service definition must be in the form
@@ -647,6 +646,5 @@ def core_interface():
     it starts ROS services and an error is raised if services are started
     twice.
     """
-    iface = CoreDBInterface(start=True)
     map_agent_iface = MapAgentInterface(start=True)
-    return iface, map_agent_iface
+    return map_agent_iface
