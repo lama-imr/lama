@@ -332,14 +332,16 @@ class CoreDBInterface(AbstractDBInterface):
         return desc_links
 
 
-class MapAgentInterface(object):
-    """Define callbacks for ActOnMap and possibly start the map agent service"""
+class LocalMapAgent(object):
+    """Define callbacks for ActOnMap and possibly start the map agent service
+
+    The class directly accesses the database.
+    """
     def __init__(self, start=False):
         action_srv_type = 'lama_interfaces/ActOnMap'
         srv_action_class = roslib.message.get_service_class(action_srv_type)
         # Action class.
-        map_agent_name = rospy.get_param('map_agent', _default_map_agent_name)
-        self.action_service_name = map_agent_name
+        self.action_service_name = map_agent_name()
         self.action_service_class = srv_action_class
         if start:
             self.map_agent = rospy.Service(self.action_service_name,
@@ -347,8 +349,7 @@ class MapAgentInterface(object):
                                            self.action_callback)
         else:
             self.map_agent = None
-        self.map_agent_proxy = rospy.ServiceProxy(self.action_service_name,
-                                                  ActOnMap)
+        self.proxy = rospy.ServiceProxy(self.action_service_name, ActOnMap)
 
         self.core_iface = CoreDBInterface(start=start)
 
@@ -626,25 +627,138 @@ class MapAgentInterface(object):
         return self.get_edge_list(msg_get_edges)
 
 
-def map_agent_interface():
-    """Return an interface of map agent iterface and run associated services
+class MapAgent(object):
+    """Class to interact with the map through service calls
 
-    Generate an interface class and run the getter, setter, and action services.
-    Service definition must be in the form
-    GetLamaObject.srv:
-      int32 id
-      ---
-      LamaObject object
-
-    and
-    SetLamaObject.srv:
-      LamaObject object
-      ---
-      int32 id
-
-    This function should be called only once with each parameter set because
-    it starts ROS services and an error is raised if services are started
-    twice.
+    The service calls must be done through MapAgent.proxy.
+    Example of database request through service call:
+        map_action = ActOnMapRequest()
+        map_action.action = map_action.GET_DESCRIPTOR_LINKS
+        map_action.object.id = request_object_id
+        map_action.interface_name = request_interface_name
+        response = MapAgent().proxy(map_action)
+    A few function members are provided to facilitate such requests
+    (get_vertex_list, get_edge_list).
     """
-    map_agent_iface = MapAgentInterface(start=True)
-    return map_agent_iface
+    def __init__(self, timeout=None):
+        """
+        Parameters
+        ----------
+        - timeout: None or double. Timeout for contacting service. If None,
+            the service is supposed to be up and wait_for_service will not be
+            called. If 0, wait_for_service() is called, i.e. wait undefinitely.
+            Otherwise, wait_for_service(timeout) is called.
+        """
+        self._timeout = timeout
+        action_srv_type = 'lama_interfaces/ActOnMap'
+        srv_action_class = roslib.message.get_service_class(action_srv_type)
+        # Action class.
+        self.action_service_name = map_agent_name()
+        self.action_service_class = srv_action_class
+        self.proxy = rospy.ServiceProxy(self.action_service_name, ActOnMap)
+
+    @property
+    def timeout(self):
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, value):
+        self._timeout = value
+
+    def wait_for_service(self):
+        if self.timeout is not None:
+            if self.timeout == 0:
+                rospy.logdebug('Waiting for service {}'.format(
+                    self.action_service_name))
+                self.proxy.wait_for_service()
+                rospy.logdebug('Service {} replied'.format(
+                    self.action_service_name))
+                return True
+            else:
+                try:
+                    self.proxy.wait_for_service(self.timeout)
+                except rospy.ROSException:
+                    rospy.logerr('Service {} not available'.format(
+                        self.action_service_name))
+                    return False
+        return True
+
+    def get_lama_object_list(self):
+        """Return the list of vertices and edges as LamaObject"""
+        if not self.wait_for_service():
+            return
+        vertices = self.get_vertex_list()
+        if vertices is None:
+            return
+        edges = self.get_edge_list()
+        if edges is None:
+            return
+        return vertices + edges
+
+    def get_edge_list(self, criteria=None):
+        """Return the list of edges as LamaObject that match the search criteria
+
+        Retrieve all edges that match the search criteria.
+
+        Search criteria are attributes of criteria with non-default values
+        (defaults are 0 or '').
+        Return a list of LamaObject, an empty list of no LamaObject matches, or
+        None on service error.
+
+        Parameters
+        ----------
+        - criteria: an instance of LamaObject, supposed of type EDGE.
+        """
+        if not self.wait_for_service():
+            return
+        map_action = ActOnMapRequest()
+        map_action.action = map_action.GET_EDGE_LIST
+        if criteria is not None:
+            lama_object_attr = ['id', 'id_in_world', 'name', 'emitter_id',
+                                'emitter_name', 'type', 'references']
+            for attr in lama_object_attr:
+                setattr(map_action.object, attr, getattr(criteria, attr))
+        response = self.proxy(map_action)
+        clean_tuple(response.objects)
+        return response.objects
+
+    def get_vertex_list(self, criteria=None):
+        """Return the list of vertices as LamaObject that match the criteria
+
+        Retrieve all vertices that match the search criteria.
+
+        Search criteria are attributes of criteria with non-default values
+        (defaults are 0 or '').
+        Return a list of LamaObject, an empty list of no LamaObject matches, or
+        None on service error.
+
+        Parameters
+        ----------
+        - criteria: an instance of LamaObject, supposed of type VERTEX.
+        """
+        if not self.wait_for_service():
+            return
+
+        map_action = ActOnMapRequest()
+        map_action.action = map_action.GET_VERTEX_LIST
+        if criteria is not None:
+            lama_object_attr = ['id', 'id_in_world', 'name', 'emitter_id',
+                                'emitter_name', 'type', 'references']
+            for attr in lama_object_attr:
+                setattr(map_action.object, attr, getattr(criteria, attr))
+        response = self.proxy(map_action)
+        clean_tuple(response.objects)
+        return response.objects
+
+
+def map_agent_name():
+    return rospy.get_param('map_agent', _default_map_agent_name)
+
+
+def clean_tuple(lama_objects):
+    """Transform references from tuples to list in a list of LamaObject
+
+    rospy deserializes arrays as tuples, transform them back in place to lists.
+    """
+    for lama_object in lama_objects:
+        lama_object.references = list(lama_object.references)

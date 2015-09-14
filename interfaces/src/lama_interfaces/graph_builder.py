@@ -2,13 +2,11 @@
 
 import rospy
 
-from lama_interfaces.core_interface import MapAgentInterface
-from lama_interfaces.srv import ActOnMap
+from lama_interfaces.core_interface import MapAgent
 from lama_interfaces.srv import ActOnMapRequest
 from lama_msgs.msg import LamaObject
 
-_iface = MapAgentInterface(start=False)
-_map_agent = rospy.ServiceProxy(_iface.action_service_name, ActOnMap)
+_map_agent = MapAgent()
 
 
 def get_vertex_from_graph(graph, id_):
@@ -31,15 +29,19 @@ def get_directed_graph():
     All vertices are listed as key. All edges are listed as values.
     """
     # Get the vertices (graph keys).
-    response = _map_agent(action=ActOnMapRequest.GET_VERTEX_LIST)
     graph = {}
-    for vertex in response.objects:
+    vertices = _map_agent.get_vertex_list()
+    if vertices is None:
+        return graph
+    for vertex in vertices:
         # rospy deserializes arrays as tuples, convert to list.
         vertex.references = list(vertex.references)
         graph[vertex] = []
     # Get the edges (graph values).
-    response = _map_agent(action=ActOnMapRequest.GET_EDGE_LIST)
-    for edge in response.objects:
+    edges = _map_agent.get_edge_list()
+    if edges is None:
+        return graph
+    for edge in edges:
         # rospy deserializes arrays as tuples, convert to list.
         edge.references = list(edge.references)
         first_vertex = get_vertex_from_graph(graph, edge.references[0])
@@ -69,17 +71,15 @@ def get_directed_graph_index():
 
 
 def get_edges_with_vertices(v0, v1):
-    """Return the list of edges from v0 to v1, as LamaObject"""
-    map_action = ActOnMapRequest()
-    map_action.action = map_action.GET_EDGE_LIST
-    response = _map_agent(map_action)
-    edges = []
-    for edge in response.objects:
-        if (edge.references[0] == v0) and (edge.references[1] == v1):
-            # rospy deserializes arrays as tuples, convert to list.
-            edge.references = list(edge.references)
-            edges.append(edge)
-    return edges
+    """Return the list of edges from v0 to v1, as LamaObject
+
+    Return the list of edges from v0 to v1, as LamaObject. Return None on
+    service error.
+    """
+    edge = LamaObject()
+    edge.type = edge.EDGE
+    edge.references = [v0, v1]
+    return _map_agent.get_edge_list(edge)
 
 
 def get_descriptors(object_id, interface, getter):
@@ -99,7 +99,7 @@ def get_descriptors(object_id, interface, getter):
     lama_object.id = object_id
     map_action.object = lama_object
     map_action.interface_name = interface
-    response = _map_agent(map_action)
+    response = _map_agent.proxy(map_action)
     descriptors = []
     for descriptor_link in response.descriptor_links:
         getter_response = getter(descriptor_link.descriptor_id)
