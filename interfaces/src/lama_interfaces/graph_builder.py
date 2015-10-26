@@ -2,9 +2,10 @@
 
 import rospy
 
-from lama_interfaces.core_interface import MapAgent
-from lama_interfaces.srv import ActOnMapRequest
 from lama_msgs.msg import LamaObject
+
+from lama_interfaces.map_agent import MapAgent
+from lama_interfaces.srv import ActOnMapRequest
 
 _map_agent = MapAgent()
 

@@ -2,7 +2,7 @@
 
 import rospy
 
-from lama_interfaces.core_interface import LocalMapAgent
+from lama_interfaces.local_map_agent import LocalMapAgent
 from lama_interfaces.interface_factory import DBInterface
 from lama_interfaces.cleartext_interface_factory import DBInterface as CTDBInterface
 from lama_interfaces.srv import AddInterface
