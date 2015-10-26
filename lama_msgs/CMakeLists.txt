@@ -30,6 +30,7 @@ add_message_files(
   Crossing.msg
   DescriptorLink.msg
   Frontier.msg
+  InterfaceInfo.msg
   LamaObject.msg
   PlaceProfile.msg
 )
@@ -45,6 +46,8 @@ add_service_files(
 
   GetPlaceProfile.srv
   SetPlaceProfile.srv
+
+  GetInterfaceInfo.srv
 )
 
 ## Generate actions in the 'action' folder

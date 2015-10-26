@@ -27,6 +27,6 @@ uint32 current_state
 uint32 TRAVERSING=1
 uint32 INTERRUPTED=2
 
-# Completion is -1 if unknown, 0 if just started, 1 if finised
+# Completion is -1 if unknown, 0 if just started, 1 if finished.
 float32 completion
 duration time_elapsed

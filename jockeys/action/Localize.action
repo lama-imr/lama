@@ -27,6 +27,6 @@ duration completion_time
 ---
 # Feedback.
 
-# Completion is -1 if unknown, 0 if just started, 1 if finised
+# Completion is -1 if unknown, 0 if just started, 1 if finished.
 float32 completion
 duration time_elapsed
