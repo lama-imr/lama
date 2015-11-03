@@ -16,6 +16,7 @@ from abstract_db_interface import AbstractDBInterface
 
 _default_core_table_name = 'lama_object'
 _default_descriptor_table_name = 'lama_descriptor_link'
+_expected_lama_object_md5sum = 'e2747a1741c10b06140b9673d9018102'
 
 
 class CoreDBInterface(AbstractDBInterface):
@@ -78,7 +79,7 @@ class CoreDBInterface(AbstractDBInterface):
     def _check_md5sum(self):
         """Check that current implementation is compatible with LamaObject"""
         lama_object = LamaObject()
-        if lama_object._md5sum != 'e2747a1741c10b06140b9673d9018102':
+        if lama_object._md5sum != _expected_lama_object_md5sum:
             raise rospy.ROSException('CoreDBInterface incompatible ' +
                                      'with current LamaObject implementation')
 
