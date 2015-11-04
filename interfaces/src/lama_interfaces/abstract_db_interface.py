@@ -66,10 +66,12 @@ class AbstractDBInterface(object):
         self.getter_service_name = self.default_getter_service_name(
             interface_name)
         self.getter_service_class = get_srv_class
+        self.getter_service_type = getter_srv_type
         # setter class
         self.setter_service_name = self.default_setter_service_name(
             interface_name)
         self.setter_service_class = set_srv_class
+        self.setter_service_type = setter_srv_type
         # interface name
         self.interface_name = interface_name
 
@@ -133,6 +135,10 @@ class AbstractDBInterface(object):
                                                    unique=True),
                                  sqlalchemy.Column('message_type',
                                                    sqlalchemy.String),
+                                 sqlalchemy.Column('get_service_type',
+                                                   sqlalchemy.String),
+                                 sqlalchemy.Column('set_service_type',
+                                                   sqlalchemy.String),
                                  sqlalchemy.Column('interface_type',
                                                    sqlalchemy.String),
                                  sqlalchemy.Column('timestamp_secs',
@@ -183,6 +189,8 @@ class AbstractDBInterface(object):
                 'interface_name': name,
                 'message_type': msg_type,
                 'interface_type': self.interface_type,
+                'get_service_type': self.getter_service_type,
+                'set_service_type': self.setter_service_type,
             }
             with connection.begin():
                 connection.execute(table.insert(), insert_args)

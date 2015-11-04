@@ -92,7 +92,8 @@ class CoreDBInterface(AbstractDBInterface):
 
     def _generate_core_table(self):
         """Create the SQL tables for LamaObject messages"""
-        # The table format is hard-coded.
+        # The table format is hard-coded but the compatibility was checked in
+        # __init__.
         table = Table(self.interface_name,
                       self.metadata,
                       Column('id', types.Integer, primary_key=True),
@@ -339,6 +340,8 @@ class CoreDBInterface(AbstractDBInterface):
         interface_info.interface_name = interface_name
         interface_info.interface_type = str(result['interface_type'])
         interface_info.message_type = str(result['message_type'])
+        interface_info.get_service_type = str(result['get_service_type'])
+        interface_info.set_service_type = str(result['set_service_type'])
         interface_info.timestamp.secs = int(result['timestamp_secs'])
         interface_info.timestamp.nsecs = int(result['timestamp_nsecs'])
         interface_info.get_service_name = self.default_getter_service_name(

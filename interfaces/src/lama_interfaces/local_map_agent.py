@@ -32,7 +32,7 @@ class LocalMapAgent(object):
             # Start the service for GetInterfaceInfo.
             rospy.Service('get_interface_info',
                           GetInterfaceInfo,
-                          self.get_interface_info_callback)
+                          self._get_interface_info_callback)
         else:
             self.map_agent = None
         self.proxy = rospy.ServiceProxy(self.action_service_name, ActOnMap)
@@ -129,7 +129,7 @@ class LocalMapAgent(object):
         response = callback(msg)
         return response
 
-    def get_interface_info_callback(self, msg):
+    def _get_interface_info_callback(self, msg):
         response = GetInterfaceInfoResponse()
         response.interface_info = self.core_iface.get_interface_info(
             msg.interface_name)
