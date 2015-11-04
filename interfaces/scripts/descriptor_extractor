@@ -1,0 +1,126 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+import rospy
+from lama_interfaces.map_agent import MapAgent
+from lama_interfaces.cleartext_interface_factory import cleartext_interface_factory
+from lama_interfaces.interface_factory import interface_factory
+from lama_msgs.srv import GetInterfaceInfo
+
+_map_agent = MapAgent()
+
+
+class GenericSaver(object):
+    """Use the generic str function on ROS messages"""
+    def __init__(self, descriptor, output_file):
+        """
+        Parameters
+        ----------
+        - descriptor: a ROS message
+        - output_file: a file object
+        """
+        self.descriptor = descriptor
+        self.output_file = output_file
+
+    def save(self):
+        self.output_file.write(str(self.descriptor))
+        self.output_file.write('\n')
+
+
+class PlaceProfileSaver(object):
+    """A specialization for PlaceProfile messages"""
+    def __init__(self, place_profile, output_file):
+        self.place_profile = place_profile
+        self.output_file = output_file
+
+    def save(self):
+        for point in self.place_profile.polygon.points:
+            self.output_file.write('{} {}\n'.format(point.x, point.y))
+        self.output_file.write('\n')
+
+_saver_classes = {
+    'Generic': GenericSaver,
+    'PlaceProfile': PlaceProfileSaver,
+}
+
+
+def start_getter_service(interface_name):
+    interface_info_client = rospy.ServiceProxy(
+        'get_interface_info', GetInterfaceInfo)
+    try:
+        interface_info_client.wait_for_service(5)
+    except rospy.ROSException:
+        rospy.logerr('service {} not available'.format(
+            interface_info_client.resolved_name))
+        return ''
+    res = interface_info_client(interface_name)
+    if not res:
+        rospy.logerr('error on call to {}'.format(
+            interface_info_client.resolved_name))
+        return
+    if res.interface_info.interface_type == 'serialization':
+        iface = interface_factory(
+            interface_name,
+            res.interface_info.get_service_type,
+            res.interface_info.set_service_type)
+    elif res.interface_info.interface_type == 'cleartext':
+        iface = cleartext_interface_factory(
+            interface_name,
+            res.interface_info.get_service_type,
+            res.interface_info.set_service_type)
+    else:
+        rospy.logerr('Unkown interface type "{}"'.format(
+            res.interface_info.interface_type))
+        return
+    return iface
+
+
+def main(interface_name, descriptor_id, saver_class, output_file):
+    _map_agent.timeout = 0
+    if saver_class not in _saver_classes:
+        raise Exception('Unknown saver_class {} should be in {}'.format(
+            interface_name, _saver_classes.keys()))
+    iface = start_getter_service(interface_name)
+    if iface is None:
+        return
+    getter = iface.getter_service_proxy
+    res = getter(descriptor_id)
+    if not res:
+        rospy.logerr('error on call to {}'.format(
+            getter.resolved_name))
+        return
+    descriptor = res.descriptor
+    saver_class = _saver_classes[saver_class]
+    saver = saver_class(descriptor, output_file)
+    saver.save()
+
+
+def usage():
+    rospy.logerr('Usage: {}'.format(sys.argv[0]) +
+                 ' interface_name descriptor_id saver_class [output_file]')
+    rospy.loginfo('Possible values for saver_class: {}'.format(
+        ''.join(sorted(_saver_classes.keys()))))
+
+if __name__ == '__main__':
+    import sys
+
+    rospy.init_node('descriptor_extractor')
+
+    if len(sys.argv) < 4:
+        usage()
+        exit(1)
+
+    interface_name = sys.argv[1]
+    try:
+        descriptor_id = int(sys.argv[2])
+    except ValueError:
+        usage()
+        exit(1)
+    saver_class = sys.argv[3]
+    try:
+        output_file = open(sys.argv[4], 'w')
+    except IOError:
+        raise
+    except IndexError:
+        output_file = sys.stdout
+    main(interface_name, descriptor_id, saver_class, output_file)
